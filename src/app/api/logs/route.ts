@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const { type, side, diaperStatus, startTime, endTime, comments, enteredByName } = body;
+  const { type, side, diaperStatus, weightKg, heightCm, startTime, endTime, comments, enteredByName } = body;
 
   if (!type || !startTime || !enteredByName) {
     return NextResponse.json(
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const validTypes = ["pump", "feed", "sleep", "diaper", "shower"];
+  const validTypes = ["pump", "feed", "sleep", "diaper", "shower", "growth"];
   if (!validTypes.includes(type)) {
     return NextResponse.json({ error: "Invalid activity type" }, { status: 400 });
   }
@@ -39,6 +39,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid diaper status" }, { status: 400 });
   }
 
+  if (type === "growth" && !weightKg && !heightCm) {
+    return NextResponse.json(
+      { error: "At least weight or height is required for growth" },
+      { status: 400 }
+    );
+  }
+
   const start = new Date(startTime);
   const end = endTime ? new Date(endTime) : null;
   const durationMinutes =
@@ -49,6 +56,8 @@ export async function POST(req: NextRequest) {
       type,
       side: side || null,
       diaperStatus: type === "diaper" ? (diaperStatus || null) : null,
+      weightKg: type === "growth" && weightKg ? parseFloat(weightKg) : null,
+      heightCm: type === "growth" && heightCm ? parseFloat(heightCm) : null,
       startTime: start,
       endTime: end,
       durationMinutes,

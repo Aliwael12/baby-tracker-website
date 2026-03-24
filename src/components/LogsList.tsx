@@ -7,6 +7,8 @@ interface LogEntry {
   type: string;
   side: string | null;
   diaperStatus: string | null;
+  weightKg: number | null;
+  heightCm: number | null;
   startTime: string;
   endTime: string | null;
   durationMinutes: number | null;
@@ -26,6 +28,7 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   sleep: { icon: "😴", label: "Sleep" },
   diaper: { icon: "👶", label: "Diaper" },
   shower: { icon: "🚿", label: "Shower" },
+  growth: { icon: "📏", label: "Growth" },
 };
 
 const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
@@ -296,6 +299,20 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                           {DIAPER_STATUS_META[log.diaperStatus].icon} {DIAPER_STATUS_META[log.diaperStatus].label}
                         </span>
+                      </div>
+                    )}
+                    {log.type === "growth" && (log.weightKg || log.heightCm) && (
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {log.weightKg !== null && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                            ⚖️ {log.weightKg} kg
+                          </span>
+                        )}
+                        {log.heightCm !== null && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600">
+                            📏 {log.heightCm} cm
+                          </span>
+                        )}
                       </div>
                     )}
                     {log.comments && (

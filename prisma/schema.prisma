@@ -12,6 +12,8 @@ model ActivityLog {
   type            String
   side            String?
   diaperStatus    String?
+  weightKg        Float?
+  heightCm        Float?
   startTime       DateTime
   endTime         DateTime?
   durationMinutes Float?
