@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import Link from "next/link";
+import PageHeader from "@/components/PageHeader";
 
 interface LogEntry {
   id: number;
@@ -180,18 +180,14 @@ export default function HistoryPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 pb-8 pt-6">
-      <header className="mb-6">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-sm font-medium text-baby-500 active:text-baby-600"
-        >
-          ← Back
-        </Link>
-        <h1 className="mt-2 text-center text-2xl font-bold text-baby-600">History</h1>
-        <p className="mt-1 text-center text-sm text-gray-400">
-          {days.length} day{days.length !== 1 ? "s" : ""} of activity
-        </p>
-      </header>
+      <PageHeader
+        title="History"
+        subtitle={
+          <p className="text-sm text-gray-400">
+            {days.length} day{days.length !== 1 ? "s" : ""} of activity
+          </p>
+        }
+      />
 
       {days.length === 0 ? (
         <div className="py-12 text-center text-baby-300">

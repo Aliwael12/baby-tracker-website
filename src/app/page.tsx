@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import NamePrompt from "@/components/NamePrompt";
 import ActivityTimerCard from "@/components/ActivityTimerCard";
 import type { ActivityType } from "@/components/ActivityTimerCard";
 import LogsList from "@/components/LogsList";
 import DailyStats from "@/components/DailyStats";
 import ManualEntry from "@/components/ManualEntry";
+import PageHeader from "@/components/PageHeader";
 
 const ACTIVITIES: ActivityType[] = ["pump", "feed", "sleep", "diaper", "shower"];
 
@@ -75,16 +75,14 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-md px-4 pb-8 pt-6">
-      {/* Header */}
-      <header className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-baby-600">Touti's Tracker</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Hi, <button onClick={handleEditName} className="font-semibold text-baby-500 underline decoration-baby-200 underline-offset-2">{userName}</button>
-          {showEditName && (
-            <button onClick={handleCancelEdit} className="ml-2 text-xs text-gray-400">(cancel)</button>
-          )}
-        </p>
-      </header>
+      <PageHeader
+        title="Touti's Tracker"
+        subtitle={
+          <p className="text-sm text-gray-400">
+            Hi, <button onClick={handleEditName} className="font-semibold text-baby-500 underline decoration-baby-200 underline-offset-2">{userName}</button>
+          </p>
+        }
+      />
 
       {/* Activity Cards */}
       <section className="mb-4 space-y-3">
@@ -133,15 +131,6 @@ export default function Home() {
         <LogsList logs={logs} onDelete={handleDeleteLog} />
       </section>
 
-      {/* History Link */}
-      <section className="mt-6 text-center">
-        <Link
-          href="/history"
-          className="inline-flex items-center gap-1.5 rounded-full bg-baby-50 px-5 py-2.5 text-sm font-semibold text-baby-500 shadow-sm transition-all active:scale-[0.97]"
-        >
-          📅 View Full History
-        </Link>
-      </section>
     </div>
   );
 }
