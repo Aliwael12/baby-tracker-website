@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import NamePrompt from "@/components/NamePrompt";
 import ActivityTimerCard from "@/components/ActivityTimerCard";
 import type { ActivityType } from "@/components/ActivityTimerCard";
@@ -130,6 +131,16 @@ export default function Home() {
           Activity Log
         </h2>
         <LogsList logs={logs} onDelete={handleDeleteLog} />
+      </section>
+
+      {/* History Link */}
+      <section className="mt-6 text-center">
+        <Link
+          href="/history"
+          className="inline-flex items-center gap-1.5 rounded-full bg-baby-50 px-5 py-2.5 text-sm font-semibold text-baby-500 shadow-sm transition-all active:scale-[0.97]"
+        >
+          📅 View Full History
+        </Link>
       </section>
     </div>
   );

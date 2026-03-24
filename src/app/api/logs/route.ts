@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const limit = req.nextUrl.searchParams.get("limit");
   const logs = await prisma.activityLog.findMany({
     orderBy: { startTime: "desc" },
-    take: 200,
+    ...(limit !== "all" && { take: parseInt(limit || "200", 10) }),
   });
   return NextResponse.json(logs);
 }
