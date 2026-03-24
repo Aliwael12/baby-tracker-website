@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 
 interface LogEntry {
   id: number;
@@ -17,6 +17,7 @@ interface LogEntry {
 
 interface LogsListProps {
   logs: LogEntry[];
+  onDelete?: (id: number) => void;
 }
 
 const TYPE_META: Record<string, { icon: string; label: string }> = {
@@ -101,7 +102,105 @@ function computeGaps(logs: LogEntry[]): Map<number, number | null> {
   return gaps;
 }
 
-export default function LogsList({ logs }: LogsListProps) {
+const DELETE_THRESHOLD = 100;
+
+function SwipeableRow({
+  children,
+  onDelete,
+}: {
+  children: React.ReactNode;
+  onDelete: () => void;
+}) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const currentX = useRef(0);
+  const swiping = useRef(false);
+  const dismissed = useRef(false);
+  const [offset, setOffset] = useState(0);
+  const [removing, setRemoving] = useState(false);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (dismissed.current) return;
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    currentX.current = 0;
+    swiping.current = false;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dismissed.current) return;
+    const dx = e.touches[0].clientX - startX.current;
+    const dy = e.touches[0].clientY - startY.current;
+
+    if (!swiping.current && Math.abs(dy) > Math.abs(dx)) return;
+    if (Math.abs(dx) > 10) swiping.current = true;
+    if (!swiping.current) return;
+
+    currentX.current = dx;
+    setOffset(dx);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (dismissed.current) return;
+    if (Math.abs(currentX.current) > DELETE_THRESHOLD) {
+      dismissed.current = true;
+      const direction = currentX.current > 0 ? 1 : -1;
+      setOffset(direction * window.innerWidth);
+      setRemoving(true);
+      setTimeout(onDelete, 300);
+    } else {
+      setOffset(0);
+    }
+    swiping.current = false;
+  }, [onDelete]);
+
+  const progress = Math.min(Math.abs(offset) / DELETE_THRESHOLD, 1);
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl"
+      style={{
+        maxHeight: removing ? 0 : 200,
+        opacity: removing ? 0 : 1,
+        marginBottom: removing ? 0 : undefined,
+        transition: removing
+          ? "max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease"
+          : undefined,
+      }}
+    >
+      <div
+        className="absolute inset-0 flex items-center rounded-2xl px-4"
+        style={{
+          background: `rgba(239, 68, 68, ${progress * 0.9})`,
+          justifyContent: offset >= 0 ? "flex-start" : "flex-end",
+        }}
+      >
+        <span
+          className="text-sm font-semibold text-white"
+          style={{ opacity: progress }}
+        >
+          🗑️ Delete
+        </span>
+      </div>
+      <div
+        ref={rowRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="relative"
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: swiping.current ? "none" : "transform 0.3s ease",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export default function LogsList({ logs, onDelete }: LogsListProps) {
   const [filter, setFilter] = useState<string | null>(null);
 
   if (logs.length === 0) {
@@ -154,59 +253,61 @@ export default function LogsList({ logs }: LogsListProps) {
                 {dateLabel}
               </div>
             )}
-            <div className="animate-slide-up rounded-2xl bg-white p-3 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-baby-50 text-xl">
-                  {meta.icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-800">
-                      {meta.label}
-                      {log.side && (
-                        <span className="ml-1 text-sm font-normal text-baby-500">
-                          ({log.side})
+            <SwipeableRow onDelete={() => onDelete?.(log.id)}>
+              <div className="animate-slide-up rounded-2xl bg-white p-3 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-baby-50 text-xl">
+                    {meta.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-800">
+                        {meta.label}
+                        {log.side && (
+                          <span className="ml-1 text-sm font-normal text-baby-500">
+                            ({log.side})
+                          </span>
+                        )}
+                      </span>
+                      {log.durationMinutes !== null && log.durationMinutes > 0 && (
+                        <span className="rounded-full bg-baby-100 px-2 py-0.5 text-xs font-semibold text-baby-600">
+                          {formatDuration(log.durationMinutes)}
                         </span>
                       )}
-                    </span>
-                    {log.durationMinutes !== null && log.durationMinutes > 0 && (
-                      <span className="rounded-full bg-baby-100 px-2 py-0.5 text-xs font-semibold text-baby-600">
-                        {formatDuration(log.durationMinutes)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-400">
-                    <span>{formatTime(log.startTime)}</span>
-                    {log.endTime && (
-                      <>
-                        <span>→</span>
-                        <span>{formatTime(log.endTime)}</span>
-                      </>
-                    )}
-                    {showGap && (
-                      <span className="rounded bg-baby-50 px-1.5 py-0.5 text-baby-500">
-                        gap: {formatGap(gap!)}
-                      </span>
-                    )}
-                  </div>
-                  {log.type === "diaper" && log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus] && (
-                    <div className="mt-1">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                        {DIAPER_STATUS_META[log.diaperStatus].icon} {DIAPER_STATUS_META[log.diaperStatus].label}
-                      </span>
                     </div>
-                  )}
-                  {log.comments && (
-                    <p className="mt-1 text-xs text-gray-500 italic">
-                      &ldquo;{log.comments}&rdquo;
-                    </p>
-                  )}
-                  <div className="mt-1 text-[11px] text-gray-300">
-                    by {log.enteredByName}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-400">
+                      <span>{formatTime(log.startTime)}</span>
+                      {log.endTime && (
+                        <>
+                          <span>→</span>
+                          <span>{formatTime(log.endTime)}</span>
+                        </>
+                      )}
+                      {showGap && (
+                        <span className="rounded bg-baby-50 px-1.5 py-0.5 text-baby-500">
+                          gap: {formatGap(gap!)}
+                        </span>
+                      )}
+                    </div>
+                    {log.type === "diaper" && log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus] && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          {DIAPER_STATUS_META[log.diaperStatus].icon} {DIAPER_STATUS_META[log.diaperStatus].label}
+                        </span>
+                      </div>
+                    )}
+                    {log.comments && (
+                      <p className="mt-1 text-xs text-gray-500 italic">
+                        &ldquo;{log.comments}&rdquo;
+                      </p>
+                    )}
+                    <div className="mt-1 text-[11px] text-gray-300">
+                      by {log.enteredByName}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </SwipeableRow>
           </div>
         );
       })}

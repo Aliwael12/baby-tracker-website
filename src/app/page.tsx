@@ -55,6 +55,15 @@ export default function Home() {
     setShowEditName(false);
   };
 
+  const handleDeleteLog = useCallback(async (id: number) => {
+    setLogs((prev) => prev.filter((l) => l.id !== id));
+    try {
+      await fetch(`/api/logs/${id}`, { method: "DELETE" });
+    } catch {
+      fetchLogs();
+    }
+  }, [fetchLogs]);
+
   if (!nameLoaded || !userName || showEditName) {
     return (
       <NamePrompt
@@ -120,7 +129,7 @@ export default function Home() {
         <h2 className="mb-3 text-center text-sm font-semibold text-gray-400 uppercase tracking-widest">
           Activity Log
         </h2>
-        <LogsList logs={logs} />
+        <LogsList logs={logs} onDelete={handleDeleteLog} />
       </section>
     </div>
   );
