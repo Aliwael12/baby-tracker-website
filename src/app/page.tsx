@@ -7,6 +7,7 @@ import type { ActivityType } from "@/components/ActivityTimerCard";
 import LogsList from "@/components/LogsList";
 import ManualEntry from "@/components/ManualEntry";
 import PageHeader from "@/components/PageHeader";
+import LastFeedBanner from "@/components/LastFeedBanner";
 
 const ACTIVITIES: ActivityType[] = ["pump", "feed", "sleep", "diaper", "shower"];
 
@@ -113,6 +114,9 @@ export default function Home() {
           onClose={() => setShowManualEntry(false)}
         />
       )}
+
+      {/* Last Feed Indicator */}
+      <LastFeedBanner logs={logs} />
 
       {/* Logs Timeline */}
       <section>
