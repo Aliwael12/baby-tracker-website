@@ -69,13 +69,13 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-function formatGap(minutes: number): string {
-  if (minutes < 60) return `${Math.round(minutes)}m ago`;
+function formatGapLabel(minutes: number): string {
+  if (minutes < 60) return `${Math.round(minutes)}m`;
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);
-  if (h < 24) return m > 0 ? `${h}h ${m}m ago` : `${h}h ago`;
+  if (h < 24) return m > 0 ? `${h}h ${m}m` : `${h}h`;
   const days = Math.floor(h / 24);
-  return `${days}d ago`;
+  return `${days}d`;
 }
 
 function computeGaps(logs: LogEntry[]): Map<number, number | null> {
@@ -244,7 +244,7 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
         const showGap =
           gap !== null &&
           gap !== undefined &&
-          (log.type === "pump" || log.type === "feed");
+          log.type === "feed";
 
         return (
           <div key={log.id}>
@@ -283,12 +283,14 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
                           <span>{formatTime(log.endTime)}</span>
                         </>
                       )}
-                      {showGap && (
-                        <span className="rounded bg-baby-50 px-1.5 py-0.5 text-baby-500">
-                          gap: {formatGap(gap!)}
-                        </span>
-                      )}
                     </div>
+                    {showGap && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                          ⏱ {formatGapLabel(gap!)} since last feed
+                        </span>
+                      </div>
+                    )}
                     {log.type === "diaper" && log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus] && (
                       <div className="mt-1">
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
