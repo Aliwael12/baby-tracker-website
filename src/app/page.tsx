@@ -5,7 +5,6 @@ import NamePrompt from "@/components/NamePrompt";
 import ActivityTimerCard from "@/components/ActivityTimerCard";
 import type { ActivityType } from "@/components/ActivityTimerCard";
 import LogsList from "@/components/LogsList";
-import DailyStats from "@/components/DailyStats";
 import ManualEntry from "@/components/ManualEntry";
 import PageHeader from "@/components/PageHeader";
 
@@ -114,14 +113,6 @@ export default function Home() {
           onClose={() => setShowManualEntry(false)}
         />
       )}
-
-      {/* Daily Stats */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-center text-sm font-semibold text-gray-400 uppercase tracking-widest">
-          Today&apos;s Summary
-        </h2>
-        <DailyStats logs={logs} />
-      </section>
 
       {/* Logs Timeline */}
       <section>
