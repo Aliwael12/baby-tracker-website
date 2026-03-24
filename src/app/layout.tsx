@@ -30,7 +30,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <footer className="pb-6 pt-10 text-center text-[11px] text-gray-300">
+          Made by alaweeka for taytoon
+        </footer>
+      </body>
     </html>
   );
 }
