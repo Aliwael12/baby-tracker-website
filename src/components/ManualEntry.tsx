@@ -136,7 +136,7 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
                       : "border-2 border-baby-200 bg-baby-50 text-baby-600"
                   }`}
                 >
-                  {s === "left" ? "🫲 Left" : "🫱 Right"}
+                  {s === "left" ? "🫲 L" : "🫱 R"}
                 </button>
               ))}
             </div>

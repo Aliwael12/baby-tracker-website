@@ -40,7 +40,7 @@ function formatMinutes(mins: number): string {
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 function formatDuration(minutes: number | null): string {
@@ -240,7 +240,7 @@ export default function HistoryPage() {
                                   {meta.label}
                                   {log.side && (
                                     <span className="ml-1 text-xs font-normal text-baby-500">
-                                      ({log.side})
+                                      ({log.side === "left" ? "L" : log.side === "right" ? "R" : log.side})
                                     </span>
                                   )}
                                 </span>

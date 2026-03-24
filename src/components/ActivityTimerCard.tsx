@@ -37,6 +37,8 @@ export default function ActivityTimerCard({
   const [activeSide, setActiveSide] = useState<"left" | "right" | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const pausedElapsedRef = useRef(0);
   const [showDiaperStatus, setShowDiaperStatus] = useState(false);
   const [diaperStatus, setDiaperStatus] = useState<string | null>(null);
   const [showComment, setShowComment] = useState(false);
@@ -46,19 +48,22 @@ export default function ActivityTimerCard({
   const endTimeRef = useRef<Date | null>(null);
 
   useEffect(() => {
-    if (startTime && !showComment) {
+    if (startTime && !showComment && !paused) {
       intervalRef.current = setInterval(() => {
-        setElapsed(Math.floor((Date.now() - startTime.getTime()) / 1000));
+        setElapsed(
+          pausedElapsedRef.current +
+            Math.floor((Date.now() - startTime.getTime()) / 1000)
+        );
       }, 1000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [startTime, showComment]);
+  }, [startTime, showComment, paused]);
 
   const handleStart = useCallback(
     (side?: "left" | "right") => {
-      if (startTime && !showComment) {
+      if (startTime && !showComment && !paused) {
         endTimeRef.current = new Date();
         setShowComment(true);
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -67,10 +72,33 @@ export default function ActivityTimerCard({
       setActiveSide(side || null);
       setStartTime(new Date());
       setElapsed(0);
+      setPaused(false);
+      pausedElapsedRef.current = 0;
       endTimeRef.current = null;
     },
-    [startTime, showComment]
+    [startTime, showComment, paused]
   );
+
+  const handleStop = useCallback(() => {
+    if (!startTime) return;
+    endTimeRef.current = new Date();
+    setShowComment(true);
+    setPaused(false);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  }, [startTime]);
+
+  const handlePause = useCallback(() => {
+    if (!startTime || paused) return;
+    pausedElapsedRef.current = elapsed;
+    setPaused(true);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  }, [startTime, paused, elapsed]);
+
+  const handleResume = useCallback(() => {
+    if (!paused) return;
+    setStartTime(new Date());
+    setPaused(false);
+  }, [paused]);
 
   const handleInstantLog = useCallback(
     (side?: "left" | "right") => {
@@ -119,6 +147,8 @@ export default function ActivityTimerCard({
     } finally {
       setStartTime(null);
       setElapsed(0);
+      setPaused(false);
+      pausedElapsedRef.current = 0;
       setActiveSide(null);
       setShowDiaperStatus(false);
       setDiaperStatus(null);
@@ -133,6 +163,8 @@ export default function ActivityTimerCard({
     if (intervalRef.current) clearInterval(intervalRef.current);
     setStartTime(null);
     setElapsed(0);
+    setPaused(false);
+    pausedElapsedRef.current = 0;
     setActiveSide(null);
     setShowDiaperStatus(false);
     setDiaperStatus(null);
@@ -141,7 +173,8 @@ export default function ActivityTimerCard({
     endTimeRef.current = null;
   };
 
-  const isRunning = !!startTime && !showComment && !showDiaperStatus;
+  const isActive = !!startTime && !showComment && !showDiaperStatus;
+  const isRunning = isActive && !paused;
 
   const DIAPER_OPTIONS = [
     { value: "empty", icon: "✅", label: "Empty" },
@@ -187,7 +220,7 @@ export default function ActivityTimerCard({
         <div className="mb-3 flex items-center justify-between">
           <span className="text-lg font-semibold text-gray-700">
             {config.icon} {config.label}
-            {activeSide ? ` (${activeSide})` : ""}
+            {activeSide ? ` (${activeSide === "left" ? "L" : "R"})` : ""}
             {diaperStatus && (
               <span className="ml-1 text-sm font-normal text-baby-500">
                 ({DIAPER_OPTIONS.find(o => o.value === diaperStatus)?.label})
@@ -231,39 +264,55 @@ export default function ActivityTimerCard({
         <div className="mb-2 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
           {config.icon} {config.label}
         </div>
-        {isRunning && (
+        {isActive && (
           <div className="mb-2 text-center">
-            <span className="animate-pulse-soft inline-block rounded-full bg-baby-400 px-4 py-1 text-sm font-bold text-white">
-              {formatTimer(elapsed)} — {activeSide}
+            <span className={`inline-block rounded-full px-4 py-1 text-sm font-bold text-white ${paused ? "bg-amber-400" : "animate-pulse-soft bg-baby-400"}`}>
+              {formatTimer(elapsed)} — {activeSide === "left" ? "L" : "R"} {paused ? "(paused)" : ""}
             </span>
           </div>
         )}
-        <div className="flex gap-3">
-          <button
-            onClick={() =>
-              isRunning ? handleStart("left") : handleStart("left")
-            }
-            disabled={isRunning && activeSide !== "left"}
-            className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 text-center transition-all active:scale-[0.95] disabled:opacity-30"
-          >
-            <span className="block text-2xl">🫲</span>
-            <span className="mt-1 block text-xs font-semibold text-baby-600">
-              {isRunning && activeSide === "left" ? "Stop" : "Left"}
-            </span>
-          </button>
-          <button
-            onClick={() =>
-              isRunning ? handleStart("right") : handleStart("right")
-            }
-            disabled={isRunning && activeSide !== "right"}
-            className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 text-center transition-all active:scale-[0.95] disabled:opacity-30"
-          >
-            <span className="block text-2xl">🫱</span>
-            <span className="mt-1 block text-xs font-semibold text-baby-600">
-              {isRunning && activeSide === "right" ? "Stop" : "Right"}
-            </span>
-          </button>
-        </div>
+        {isActive ? (
+          <div className="flex gap-2">
+            {paused ? (
+              <button
+                onClick={handleResume}
+                className="flex-1 rounded-xl border-2 border-green-300 bg-green-50 py-3 text-center text-sm font-semibold text-green-600 transition-all active:scale-[0.95]"
+              >
+                ▶ Resume
+              </button>
+            ) : (
+              <button
+                onClick={handlePause}
+                className="flex-1 rounded-xl border-2 border-amber-300 bg-amber-50 py-3 text-center text-sm font-semibold text-amber-600 transition-all active:scale-[0.95]"
+              >
+                ⏸ Pause
+              </button>
+            )}
+            <button
+              onClick={handleStop}
+              className="flex-1 rounded-xl border-2 border-red-300 bg-red-50 py-3 text-center text-sm font-semibold text-red-600 transition-all active:scale-[0.95]"
+            >
+              ⏹ Stop
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleStart("left")}
+              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 text-center transition-all active:scale-[0.95]"
+            >
+              <span className="block text-2xl">🫲</span>
+              <span className="mt-1 block text-xs font-semibold text-baby-600">L</span>
+            </button>
+            <button
+              onClick={() => handleStart("right")}
+              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 text-center transition-all active:scale-[0.95]"
+            >
+              <span className="block text-2xl">🫱</span>
+              <span className="mt-1 block text-xs font-semibold text-baby-600">R</span>
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -284,22 +333,46 @@ export default function ActivityTimerCard({
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-md">
-      {isRunning && (
+      {isActive && (
         <div className="mb-2 text-center">
-          <span className="animate-pulse-soft inline-block rounded-full bg-baby-400 px-4 py-1 text-sm font-bold text-white">
-            {formatTimer(elapsed)}
+          <span className={`inline-block rounded-full px-4 py-1 text-sm font-bold text-white ${paused ? "bg-amber-400" : "animate-pulse-soft bg-baby-400"}`}>
+            {formatTimer(elapsed)} {paused ? "(paused)" : ""}
           </span>
         </div>
       )}
-      <button
-        onClick={() => handleStart()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 transition-all active:scale-[0.95]"
-      >
-        <span className="text-2xl">{config.icon}</span>
-        <span className="font-semibold text-baby-600">
-          {isRunning ? `Stop ${config.label}` : config.label}
-        </span>
-      </button>
+      {isActive ? (
+        <div className="flex gap-2">
+          {paused ? (
+            <button
+              onClick={handleResume}
+              className="flex-1 rounded-xl border-2 border-green-300 bg-green-50 py-3 text-center text-sm font-semibold text-green-600 transition-all active:scale-[0.95]"
+            >
+              ▶ Resume
+            </button>
+          ) : (
+            <button
+              onClick={handlePause}
+              className="flex-1 rounded-xl border-2 border-amber-300 bg-amber-50 py-3 text-center text-sm font-semibold text-amber-600 transition-all active:scale-[0.95]"
+            >
+              ⏸ Pause
+            </button>
+          )}
+          <button
+            onClick={handleStop}
+            className="flex-1 rounded-xl border-2 border-red-300 bg-red-50 py-3 text-center text-sm font-semibold text-red-600 transition-all active:scale-[0.95]"
+          >
+            ⏹ Stop
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => handleStart()}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 transition-all active:scale-[0.95]"
+        >
+          <span className="text-2xl">{config.icon}</span>
+          <span className="font-semibold text-baby-600">{config.label}</span>
+        </button>
+      )}
     </div>
   );
 }
