@@ -6,6 +6,7 @@ import ActivityTimerCard from "@/components/ActivityTimerCard";
 import type { ActivityType } from "@/components/ActivityTimerCard";
 import LogsList from "@/components/LogsList";
 import DailyStats from "@/components/DailyStats";
+import ManualEntry from "@/components/ManualEntry";
 
 const ACTIVITIES: ActivityType[] = ["pump", "feed", "sleep", "diaper", "shower"];
 
@@ -15,6 +16,7 @@ export default function Home() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [logs, setLogs] = useState<any[]>([]);
   const [showEditName, setShowEditName] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("babytracker_username");
@@ -75,7 +77,7 @@ export default function Home() {
       </header>
 
       {/* Activity Cards */}
-      <section className="mb-8 space-y-3">
+      <section className="mb-4 space-y-3">
         {ACTIVITIES.map((type) => (
           <ActivityTimerCard
             key={type}
@@ -85,6 +87,25 @@ export default function Home() {
           />
         ))}
       </section>
+
+      {/* Manual Entry Button */}
+      <section className="mb-8">
+        <button
+          onClick={() => setShowManualEntry(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-baby-300 bg-baby-50/50 py-3 transition-all active:scale-[0.98]"
+        >
+          <span className="text-lg">📝</span>
+          <span className="text-sm font-semibold text-baby-500">Add Manual Entry</span>
+        </button>
+      </section>
+
+      {showManualEntry && (
+        <ManualEntry
+          userName={userName}
+          onSaved={fetchLogs}
+          onClose={() => setShowManualEntry(false)}
+        />
+      )}
 
       {/* Daily Stats */}
       <section className="mb-8">
