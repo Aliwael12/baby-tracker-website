@@ -203,8 +203,44 @@ function SwipeableRow({
   );
 }
 
+function DeleteConfirm({
+  onConfirm,
+  onCancel,
+}: {
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+      <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-xl">
+        <p className="mb-1 text-center text-base font-semibold text-gray-800">
+          Delete this log?
+        </p>
+        <p className="mb-5 text-center text-sm text-gray-400">
+          This action cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-500 transition-all active:scale-[0.97]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white shadow transition-all active:scale-[0.97]"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LogsList({ logs, onDelete }: LogsListProps) {
   const [filter, setFilter] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   if (logs.length === 0) {
     return (
@@ -256,7 +292,7 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
                 {dateLabel}
               </div>
             )}
-            <SwipeableRow onDelete={() => onDelete?.(log.id)}>
+            <SwipeableRow onDelete={() => setPendingDeleteId(log.id)}>
               <div className="animate-slide-up rounded-2xl bg-white p-3 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-baby-50 text-xl">
@@ -290,7 +326,7 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
                     {showGap && (
                       <div className="mt-1">
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
-                          ⏱ {formatGapLabel(gap!)} since last feed
+                          ⏱ {formatGapLabel(gap!)} since previous feed
                         </span>
                       </div>
                     )}
@@ -331,6 +367,16 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
         );
       })}
       </div>
+
+      {pendingDeleteId !== null && (
+        <DeleteConfirm
+          onConfirm={() => {
+            onDelete?.(pendingDeleteId);
+            setPendingDeleteId(null);
+          }}
+          onCancel={() => setPendingDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -44,7 +44,7 @@ export default function LastFeedBanner({ logs }: LastFeedBannerProps) {
   return (
     <div className="mb-4 rounded-2xl bg-gradient-to-r from-blue-50 to-baby-50 p-3 text-center shadow-sm">
       <span className="text-sm text-gray-600">
-        🤱 Last feed was <span className="font-bold text-baby-600">{formatElapsed(elapsed)}</span>
+        🤱 Last feed started <span className="font-bold text-baby-600">{formatElapsed(elapsed)}</span>
       </span>
     </div>
   );
