@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Taytoon's Tracker",
+  title: "Touti's Tracker",
   description: "Track feeding, pumping, sleep, diapers & showers",
   icons: {
     icon: "/icon.jpg",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "Taytoon's Tracker",
+    title: "Touti's Tracker",
     statusBarStyle: "default",
   },
 };

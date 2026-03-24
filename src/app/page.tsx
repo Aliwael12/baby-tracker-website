@@ -64,7 +64,7 @@ export default function Home() {
     <div className="mx-auto max-w-md px-4 pb-8 pt-6">
       {/* Header */}
       <header className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-baby-600">Taytoon's Tracker</h1>
+        <h1 className="text-2xl font-bold text-baby-600">Touti's Tracker</h1>
         <p className="mt-1 text-sm text-gray-400">
           Hi, <button onClick={handleEditName} className="font-semibold text-baby-500 underline decoration-baby-200 underline-offset-2">{userName}</button>
           {showEditName && (
