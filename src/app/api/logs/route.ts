@@ -12,7 +12,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const { type, side, startTime, endTime, comments, enteredByName } = body;
+  const { type, side, diaperStatus, startTime, endTime, comments, enteredByName } = body;
 
   if (!type || !startTime || !enteredByName) {
     return NextResponse.json(
@@ -33,6 +33,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const validDiaperStatuses = ["empty", "wet", "dirty", "wet_and_dirty"];
+  if (type === "diaper" && diaperStatus && !validDiaperStatuses.includes(diaperStatus)) {
+    return NextResponse.json({ error: "Invalid diaper status" }, { status: 400 });
+  }
+
   const start = new Date(startTime);
   const end = endTime ? new Date(endTime) : null;
   const durationMinutes =
@@ -42,6 +47,7 @@ export async function POST(req: NextRequest) {
     data: {
       type,
       side: side || null,
+      diaperStatus: type === "diaper" ? (diaperStatus || null) : null,
       startTime: start,
       endTime: end,
       durationMinutes,

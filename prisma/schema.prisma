@@ -11,6 +11,7 @@ model ActivityLog {
   id              Int       @id @default(autoincrement())
   type            String
   side            String?
+  diaperStatus    String?
   startTime       DateTime
   endTime         DateTime?
   durationMinutes Float?

@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
+
 interface LogEntry {
   id: number;
   type: string;
   side: string | null;
+  diaperStatus: string | null;
   startTime: string;
   endTime: string | null;
   durationMinutes: number | null;
@@ -23,6 +26,22 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   diaper: { icon: "👶", label: "Diaper" },
   shower: { icon: "🚿", label: "Shower" },
 };
+
+const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
+  empty: { icon: "✅", label: "Empty" },
+  wet: { icon: "💧", label: "Wet" },
+  dirty: { icon: "💩", label: "Dirty" },
+  wet_and_dirty: { icon: "💧💩", label: "Wet & Dirty" },
+};
+
+const FILTER_OPTIONS = [
+  { value: null, label: "All" },
+  { value: "pump", icon: "🍼", label: "Pump" },
+  { value: "feed", icon: "🤱", label: "Feed" },
+  { value: "sleep", icon: "😴", label: "Sleep" },
+  { value: "diaper", icon: "👶", label: "Diaper" },
+  { value: "shower", icon: "🚿", label: "Shower" },
+] as const;
 
 function formatDuration(minutes: number | null): string {
   if (minutes === null || minutes === 0) return "instant";
@@ -83,6 +102,8 @@ function computeGaps(logs: LogEntry[]): Map<number, number | null> {
 }
 
 export default function LogsList({ logs }: LogsListProps) {
+  const [filter, setFilter] = useState<string | null>(null);
+
   if (logs.length === 0) {
     return (
       <div className="py-12 text-center text-baby-300">
@@ -92,13 +113,30 @@ export default function LogsList({ logs }: LogsListProps) {
     );
   }
 
+  const filteredLogs = filter ? logs.filter((l) => l.type === filter) : logs;
   const gaps = computeGaps(logs);
 
   let lastDate = "";
 
   return (
-    <div className="space-y-2">
-      {logs.map((log) => {
+    <div>
+      <div className="mb-3 flex flex-wrap justify-center gap-1.5">
+        {FILTER_OPTIONS.map((opt) => (
+          <button
+            key={opt.value ?? "all"}
+            onClick={() => setFilter(opt.value)}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+              filter === opt.value
+                ? "bg-baby-400 text-white shadow-sm"
+                : "bg-baby-50 text-baby-500"
+            }`}
+          >
+            {"icon" in opt && opt.icon ? `${opt.icon} ` : ""}{opt.label}
+          </button>
+        ))}
+      </div>
+      <div className="space-y-2">
+      {filteredLogs.map((log) => {
         const meta = TYPE_META[log.type] || { icon: "❓", label: log.type };
         const dateLabel = formatDate(log.startTime);
         const showDateHeader = dateLabel !== lastDate;
@@ -151,6 +189,13 @@ export default function LogsList({ logs }: LogsListProps) {
                       </span>
                     )}
                   </div>
+                  {log.type === "diaper" && log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus] && (
+                    <div className="mt-1">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        {DIAPER_STATUS_META[log.diaperStatus].icon} {DIAPER_STATUS_META[log.diaperStatus].label}
+                      </span>
+                    </div>
+                  )}
                   {log.comments && (
                     <p className="mt-1 text-xs text-gray-500 italic">
                       &ldquo;{log.comments}&rdquo;
@@ -165,6 +210,7 @@ export default function LogsList({ logs }: LogsListProps) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

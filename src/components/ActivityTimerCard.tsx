@@ -37,6 +37,8 @@ export default function ActivityTimerCard({
   const [activeSide, setActiveSide] = useState<"left" | "right" | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [showDiaperStatus, setShowDiaperStatus] = useState(false);
+  const [diaperStatus, setDiaperStatus] = useState<string | null>(null);
   const [showComment, setShowComment] = useState(false);
   const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
@@ -76,10 +78,20 @@ export default function ActivityTimerCard({
       setActiveSide(side || null);
       setStartTime(now);
       endTimeRef.current = now;
-      setShowComment(true);
+      if (type === "diaper") {
+        setShowDiaperStatus(true);
+      } else {
+        setShowComment(true);
+      }
     },
-    []
+    [type]
   );
+
+  const handleDiaperStatusSelect = (status: string) => {
+    setDiaperStatus(status);
+    setShowDiaperStatus(false);
+    setShowComment(true);
+  };
 
   const handleSave = async () => {
     if (!startTime) return;
@@ -88,6 +100,7 @@ export default function ActivityTimerCard({
     const payload = {
       type,
       side: activeSide,
+      diaperStatus: type === "diaper" ? diaperStatus : null,
       startTime: startTime.toISOString(),
       endTime: (endTimeRef.current || new Date()).toISOString(),
       comments: comment.trim() || null,
@@ -107,6 +120,8 @@ export default function ActivityTimerCard({
       setStartTime(null);
       setElapsed(0);
       setActiveSide(null);
+      setShowDiaperStatus(false);
+      setDiaperStatus(null);
       setShowComment(false);
       setComment("");
       setSaving(false);
@@ -119,12 +134,52 @@ export default function ActivityTimerCard({
     setStartTime(null);
     setElapsed(0);
     setActiveSide(null);
+    setShowDiaperStatus(false);
+    setDiaperStatus(null);
     setShowComment(false);
     setComment("");
     endTimeRef.current = null;
   };
 
-  const isRunning = !!startTime && !showComment;
+  const isRunning = !!startTime && !showComment && !showDiaperStatus;
+
+  const DIAPER_OPTIONS = [
+    { value: "empty", icon: "✅", label: "Empty" },
+    { value: "wet", icon: "💧", label: "Wet" },
+    { value: "dirty", icon: "💩", label: "Dirty" },
+    { value: "wet_and_dirty", icon: "💧💩", label: "Wet & Dirty" },
+  ];
+
+  if (showDiaperStatus) {
+    return (
+      <div className="animate-slide-up rounded-2xl bg-white p-4 shadow-md">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-lg font-semibold text-gray-700">
+            {config.icon} {config.label}
+          </span>
+          <button
+            onClick={handleCancel}
+            className="text-xs text-gray-400"
+          >
+            Cancel
+          </button>
+        </div>
+        <p className="mb-3 text-center text-sm text-gray-500">What&apos;s the status?</p>
+        <div className="grid grid-cols-2 gap-2">
+          {DIAPER_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleDiaperStatusSelect(opt.value)}
+              className="flex flex-col items-center gap-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-3 transition-all active:scale-[0.95] active:border-baby-400"
+            >
+              <span className="text-xl">{opt.icon}</span>
+              <span className="text-xs font-semibold text-baby-600">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (showComment) {
     return (
@@ -133,6 +188,11 @@ export default function ActivityTimerCard({
           <span className="text-lg font-semibold text-gray-700">
             {config.icon} {config.label}
             {activeSide ? ` (${activeSide})` : ""}
+            {diaperStatus && (
+              <span className="ml-1 text-sm font-normal text-baby-500">
+                ({DIAPER_OPTIONS.find(o => o.value === diaperStatus)?.label})
+              </span>
+            )}
           </span>
           <span className="rounded-full bg-baby-100 px-3 py-1 text-sm font-medium text-baby-600">
             {formatTimer(elapsed)}
