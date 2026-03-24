@@ -25,18 +25,23 @@ const DIAPER_OPTIONS = [
   { value: "wet_and_dirty", icon: "💧💩", label: "Wet & Dirty" },
 ];
 
-function toLocalDatetimeStr(d: Date): string {
+function toLocalDateStr(d: Date): string {
   const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function toLocalTimeStr(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryProps) {
   const [activityType, setActivityType] = useState<ActivityType | null>(null);
   const [side, setSide] = useState<"left" | "right" | null>(null);
   const [diaperStatus, setDiaperStatus] = useState<string | null>(null);
-  const [startTimeStr, setStartTimeStr] = useState(toLocalDatetimeStr(new Date()));
-  const [durationH, setDurationH] = useState("0");
-  const [durationM, setDurationM] = useState("0");
+  const [dateStr, setDateStr] = useState(toLocalDateStr(new Date()));
+  const [startTimeStr, setStartTimeStr] = useState(toLocalTimeStr(new Date()));
+  const [endTimeStr, setEndTimeStr] = useState(toLocalTimeStr(new Date()));
   const [comments, setComments] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -54,9 +59,8 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
     if (!canSave) return;
     setSaving(true);
 
-    const start = new Date(startTimeStr);
-    const totalMinutes = isDiaper ? 0 : parseInt(durationH) * 60 + parseInt(durationM);
-    const end = new Date(start.getTime() + totalMinutes * 60000);
+    const start = new Date(`${dateStr}T${startTimeStr}`);
+    const end = isDiaper ? start : new Date(`${dateStr}T${endTimeStr}`);
 
     const payload = {
       type: activityType,
@@ -164,45 +168,42 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
           </>
         )}
 
-        {/* When */}
+        {/* Date */}
         <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          When
+          Date
         </label>
         <input
-          type="datetime-local"
-          value={startTimeStr}
-          onChange={(e) => setStartTimeStr(e.target.value)}
+          type="date"
+          value={dateStr}
+          onChange={(e) => setDateStr(e.target.value)}
           className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none transition-colors focus:border-baby-400"
         />
 
-        {/* Duration (not for diaper) */}
+        {/* Start & End Time (not for diaper) */}
         {!isDiaper && (
           <>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Duration
-            </label>
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex flex-1 items-center gap-1">
+            <div className="mb-4 flex gap-3">
+              <div className="flex-1">
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Start Time
+                </label>
                 <input
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={durationH}
-                  onChange={(e) => setDurationH(e.target.value)}
-                  className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-center text-sm outline-none focus:border-baby-400"
+                  type="time"
+                  value={startTimeStr}
+                  onChange={(e) => setStartTimeStr(e.target.value)}
+                  className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
                 />
-                <span className="text-xs font-medium text-gray-400">hr</span>
               </div>
-              <div className="flex flex-1 items-center gap-1">
+              <div className="flex-1">
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  End Time
+                </label>
                 <input
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={durationM}
-                  onChange={(e) => setDurationM(e.target.value)}
-                  className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-center text-sm outline-none focus:border-baby-400"
+                  type="time"
+                  value={endTimeStr}
+                  onChange={(e) => setEndTimeStr(e.target.value)}
+                  className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
                 />
-                <span className="text-xs font-medium text-gray-400">min</span>
               </div>
             </div>
           </>
