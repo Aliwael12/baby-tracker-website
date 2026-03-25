@@ -28,10 +28,12 @@ function formatTimer(seconds: number): string {
 }
 
 interface TimerState {
+  originalStartTimeISO: string;
   startTimeISO: string;
   pausedElapsed: number;
   paused: boolean;
   activeSide: "left" | "right" | null;
+  pausedAtISO: string | null;
 }
 
 function storageKey(type: ActivityType): string {
@@ -79,6 +81,7 @@ export default function ActivityTimerCard({
   const [saving, setSaving] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const endTimeRef = useRef<Date | null>(null);
+  const originalStartTimeRef = useRef<Date | null>(null);
   const restoredRef = useRef(false);
 
   useEffect(() => {
@@ -87,13 +90,18 @@ export default function ActivityTimerCard({
     const saved = loadTimerState(type);
     if (!saved) return;
     const restored = new Date(saved.startTimeISO);
-    if (isNaN(restored.getTime())) return;
+    const originalStart = new Date(saved.originalStartTimeISO);
+    if (isNaN(restored.getTime()) || isNaN(originalStart.getTime())) return;
     setActiveSide(saved.activeSide);
     pausedElapsedRef.current = saved.pausedElapsed;
     setPaused(saved.paused);
     setStartTime(restored);
+    originalStartTimeRef.current = originalStart;
     if (saved.paused) {
       setElapsed(saved.pausedElapsed);
+      if (saved.pausedAtISO) {
+        endTimeRef.current = new Date(saved.pausedAtISO);
+      }
     } else {
       setElapsed(
         saved.pausedElapsed +
@@ -128,15 +136,18 @@ export default function ActivityTimerCard({
       const now = new Date();
       setActiveSide(side || null);
       setStartTime(now);
+      originalStartTimeRef.current = now;
       setElapsed(0);
       setPaused(false);
       pausedElapsedRef.current = 0;
       endTimeRef.current = null;
       saveTimerState(type, {
+        originalStartTimeISO: now.toISOString(),
         startTimeISO: now.toISOString(),
         pausedElapsed: 0,
         paused: false,
         activeSide: side || null,
+        pausedAtISO: null,
       });
     },
     [startTime, showComment, paused, type]
@@ -144,23 +155,30 @@ export default function ActivityTimerCard({
 
   const handleStop = useCallback(() => {
     if (!startTime) return;
-    endTimeRef.current = new Date();
+    if (!paused) {
+      endTimeRef.current = new Date();
+    }
+    // If paused, endTimeRef already holds the moment we paused
     setShowComment(true);
     setPaused(false);
     clearTimerState(type);
     if (intervalRef.current) clearInterval(intervalRef.current);
-  }, [startTime, type]);
+  }, [startTime, paused, type]);
 
   const handlePause = useCallback(() => {
     if (!startTime || paused) return;
+    const now = new Date();
     pausedElapsedRef.current = elapsed;
+    endTimeRef.current = now;
     setPaused(true);
     if (intervalRef.current) clearInterval(intervalRef.current);
     saveTimerState(type, {
+      originalStartTimeISO: (originalStartTimeRef.current || startTime).toISOString(),
       startTimeISO: startTime.toISOString(),
       pausedElapsed: elapsed,
       paused: true,
       activeSide,
+      pausedAtISO: now.toISOString(),
     });
   }, [startTime, paused, elapsed, type, activeSide]);
 
@@ -169,11 +187,14 @@ export default function ActivityTimerCard({
     const now = new Date();
     setStartTime(now);
     setPaused(false);
+    endTimeRef.current = null;
     saveTimerState(type, {
+      originalStartTimeISO: (originalStartTimeRef.current || now).toISOString(),
       startTimeISO: now.toISOString(),
       pausedElapsed: pausedElapsedRef.current,
       paused: false,
       activeSide,
+      pausedAtISO: null,
     });
   }, [paused, type, activeSide]);
 
@@ -206,7 +227,7 @@ export default function ActivityTimerCard({
       type,
       side: activeSide,
       diaperStatus: type === "diaper" ? diaperStatus : null,
-      startTime: startTime.toISOString(),
+      startTime: (originalStartTimeRef.current || startTime).toISOString(),
       endTime: (endTimeRef.current || new Date()).toISOString(),
       comments: comment.trim() || null,
       enteredByName: userName,
@@ -233,6 +254,7 @@ export default function ActivityTimerCard({
       setComment("");
       setSaving(false);
       endTimeRef.current = null;
+      originalStartTimeRef.current = null;
       clearTimerState(type);
     }
   };
@@ -249,6 +271,7 @@ export default function ActivityTimerCard({
     setShowComment(false);
     setComment("");
     endTimeRef.current = null;
+    originalStartTimeRef.current = null;
     clearTimerState(type);
   };
 
