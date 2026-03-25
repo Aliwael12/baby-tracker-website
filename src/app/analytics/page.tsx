@@ -32,8 +32,11 @@ interface DayStats {
   dateKey: string;
   dateLabel: string;
   feedTime: number;
+  feedCount: number;
   pumpTime: number;
+  pumpCount: number;
   sleepTime: number;
+  sleepCount: number;
   diaperCount: number;
   showerCount: number;
   totalLogs: number;
@@ -60,8 +63,11 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
       dateKey,
       dateLabel: formatDateShort(dayLogs[0].startTime),
       feedTime: totalTime("feed"),
+      feedCount: count("feed"),
       pumpTime: totalTime("pump"),
+      pumpCount: count("pump"),
       sleepTime: totalTime("sleep"),
+      sleepCount: count("sleep"),
       diaperCount: count("diaper"),
       showerCount: count("shower"),
       totalLogs: dayLogs.length,
@@ -77,12 +83,14 @@ function StatCard({
   today,
   avg,
   total,
+  totalCount,
 }: {
   icon: string;
   label: string;
   today: string;
   avg: string;
   total: string;
+  totalCount?: number;
 }) {
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -102,6 +110,11 @@ function StatCard({
         <div>
           <div className="text-lg font-bold text-gray-500">{total}</div>
           <div className="text-[10px] font-medium text-gray-400 uppercase">All Time</div>
+          {totalCount !== undefined && totalCount > 0 && (
+            <div className="mt-0.5 text-[10px] font-medium text-baby-400">
+              {totalCount} time{totalCount !== 1 ? "s" : ""}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -150,8 +163,11 @@ export default function AnalyticsPage() {
       },
       totalStats: {
         feedTime: sum((d) => d.feedTime),
+        feedCount: sum((d) => d.feedCount),
         pumpTime: sum((d) => d.pumpTime),
+        pumpCount: sum((d) => d.pumpCount),
         sleepTime: sum((d) => d.sleepTime),
+        sleepCount: sum((d) => d.sleepCount),
         diaperCount: sum((d) => d.diaperCount),
         showerCount: sum((d) => d.showerCount),
         totalLogs: sum((d) => d.totalLogs),
@@ -185,6 +201,7 @@ export default function AnalyticsPage() {
           today={formatMinutes(todayStats.feedTime)}
           avg={formatMinutes(Math.round(avgStats.feedTime))}
           total={formatMinutes(totalStats.feedTime)}
+          totalCount={totalStats.feedCount}
         />
         <StatCard
           icon="🍼"
@@ -192,6 +209,7 @@ export default function AnalyticsPage() {
           today={formatMinutes(todayStats.pumpTime)}
           avg={formatMinutes(Math.round(avgStats.pumpTime))}
           total={formatMinutes(totalStats.pumpTime)}
+          totalCount={totalStats.pumpCount}
         />
         <StatCard
           icon="😴"
@@ -199,6 +217,7 @@ export default function AnalyticsPage() {
           today={formatMinutes(todayStats.sleepTime)}
           avg={formatMinutes(Math.round(avgStats.sleepTime))}
           total={formatMinutes(totalStats.sleepTime)}
+          totalCount={totalStats.sleepCount}
         />
         <StatCard
           icon="👶"
