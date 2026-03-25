@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface LogEntry {
   id: number;
@@ -20,6 +20,7 @@ interface LogEntry {
 interface LogsListProps {
   logs: LogEntry[];
   onDelete?: (id: number) => void;
+  onEdit?: () => void | Promise<void>;
 }
 
 const TYPE_META: Record<string, { icon: string; label: string }> = {
@@ -238,9 +239,19 @@ function DeleteConfirm({
   );
 }
 
-export default function LogsList({ logs, onDelete }: LogsListProps) {
+export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
   const [filter, setFilter] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [editLog, setEditLog] = useState<LogEntry | null>(null);
+  const [editComments, setEditComments] = useState("");
+  const [editDiaperStatus, setEditDiaperStatus] = useState<string | null>(null);
+
+  // Initialize edit form when opening the modal
+  useEffect(() => {
+    if (!editLog) return;
+    setEditComments(editLog.comments ?? "");
+    setEditDiaperStatus(editLog.diaperStatus ?? null);
+  }, [editLog]);
 
   if (logs.length === 0) {
     return (
@@ -255,6 +266,37 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
   const gaps = computeGaps(logs);
 
   let lastDate = "";
+
+  const beginEdit = (log: LogEntry) => {
+    setEditLog(log);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editLog) return;
+
+    const payload: Record<string, unknown> = {
+      comments: editComments.trim() ? editComments.trim() : null,
+    };
+
+    if (editLog.type === "diaper") {
+      payload.diaperStatus = editDiaperStatus;
+    }
+
+    try {
+      const res = await fetch(`/api/logs/${editLog.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        onEdit?.();
+        setEditLog(null);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   return (
     <div>
@@ -359,6 +401,17 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
                     <div className="mt-1 text-[11px] text-gray-300">
                       by {log.enteredByName}
                     </div>
+
+                    <div className="mt-2 flex items-center justify-end">
+                      <button
+                        onClick={() => beginEdit(log)}
+                        className="rounded-xl border border-baby-200 bg-baby-50 px-2.5 py-1.5 text-sm font-semibold text-baby-600 transition-all active:scale-[0.97]"
+                        aria-label="Edit log"
+                        title="Edit log"
+                      >
+                        ✏️
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -376,6 +429,80 @@ export default function LogsList({ logs, onDelete }: LogsListProps) {
           }}
           onCancel={() => setPendingDeleteId(null)}
         />
+      )}
+
+      {editLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+          <div className="w-full max-w-xs animate-slide-up rounded-2xl bg-white p-5 shadow-xl">
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-center text-base font-semibold text-gray-800">
+                  Edit log
+                </p>
+                <p className="mt-1 text-center text-xs text-gray-400">
+                  {TYPE_META[editLog.type]?.icon} {TYPE_META[editLog.type]?.label} {formatTime(editLog.startTime)}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditLog(null)}
+                className="text-xs text-gray-400"
+                aria-label="Close edit"
+              >
+                Close
+              </button>
+            </div>
+
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Notes
+            </label>
+            <input
+              type="text"
+              value={editComments}
+              onChange={(e) => setEditComments(e.target.value)}
+              placeholder="Optional"
+              className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+
+            {editLog.type === "diaper" && (
+              <>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Status
+                </label>
+                <div className="mb-4 grid grid-cols-2 gap-2">
+                  {Object.entries(DIAPER_STATUS_META).map(([value, meta]) => (
+                    <button
+                      key={value}
+                      onClick={() => setEditDiaperStatus(value)}
+                      className={`flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-semibold transition-all ${
+                        editDiaperStatus === value
+                          ? "bg-baby-400 text-white shadow-sm"
+                          : "border-2 border-baby-200 bg-baby-50 text-baby-600"
+                      }`}
+                    >
+                      <span className="text-base">{meta.icon}</span>
+                      {meta.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditLog(null)}
+                className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-500 transition-all active:scale-[0.97]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="flex-1 rounded-xl bg-baby-400 py-2.5 text-sm font-semibold text-white shadow transition-all active:scale-[0.97]"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

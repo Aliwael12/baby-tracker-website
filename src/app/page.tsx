@@ -123,7 +123,7 @@ export default function Home() {
         <h2 className="mb-3 text-center text-sm font-semibold text-gray-400 uppercase tracking-widest">
           Activity Log
         </h2>
-        <LogsList logs={logs} onDelete={handleDeleteLog} />
+        <LogsList logs={logs} onDelete={handleDeleteLog} onEdit={fetchLogs} />
       </section>
 
     </div>

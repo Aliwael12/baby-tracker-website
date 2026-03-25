@@ -179,8 +179,24 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
           className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none transition-colors focus:border-baby-400"
         />
 
-        {/* Start & End Time (not for diaper) */}
-        {!isDiaper && (
+        {/* Time */}
+        {isDiaper ? (
+          <>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Time
+            </label>
+            <input
+              type="time"
+              value={startTimeStr}
+              onChange={(e) => {
+                setStartTimeStr(e.target.value);
+                // keep end in sync for UI consistency (diaper saves start=end)
+                setEndTimeStr(e.target.value);
+              }}
+              className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+            />
+          </>
+        ) : (
           <>
             <div className="mb-4 flex gap-3">
               <div className="flex-1">
