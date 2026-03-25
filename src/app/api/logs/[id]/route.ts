@@ -32,9 +32,11 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { comments, diaperStatus } = body as {
+  const { comments, diaperStatus, startTime, endTime } = body as {
     comments?: string | null;
     diaperStatus?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
   };
 
   const validDiaperStatuses = ["empty", "wet", "dirty", "wet_and_dirty"];
@@ -52,6 +54,38 @@ export async function PATCH(
       data.diaperStatus = diaperStatus;
     } else {
       return NextResponse.json({ error: "Invalid diaper status" }, { status: 400 });
+    }
+  }
+
+  if (startTime !== undefined && startTime) {
+    const start = new Date(startTime);
+    if (isNaN(start.getTime())) {
+      return NextResponse.json({ error: "Invalid startTime" }, { status: 400 });
+    }
+    data.startTime = start;
+  }
+
+  if (endTime !== undefined) {
+    if (endTime === null) {
+      data.endTime = null;
+      data.durationMinutes = null;
+    } else {
+      const end = new Date(endTime);
+      if (isNaN(end.getTime())) {
+        return NextResponse.json({ error: "Invalid endTime" }, { status: 400 });
+      }
+      data.endTime = end;
+    }
+  }
+
+  if (data.startTime || data.endTime !== undefined) {
+    const existing = await prisma.activityLog.findUnique({ where: { id: numId } });
+    if (existing) {
+      const finalStart = (data.startTime as Date) ?? existing.startTime;
+      const finalEnd = data.endTime === null ? null : (data.endTime as Date | undefined) ?? existing.endTime;
+      if (finalStart && finalEnd) {
+        data.durationMinutes = (finalEnd.getTime() - finalStart.getTime()) / 60000;
+      }
     }
   }
 

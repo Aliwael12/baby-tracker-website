@@ -106,6 +106,16 @@ function computeGaps(logs: LogEntry[]): Map<number, number | null> {
   return gaps;
 }
 
+function toLocalTimeStr(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function toLocalDateStr(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 const DELETE_THRESHOLD = 100;
 
 function SwipeableRow({
@@ -245,12 +255,22 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
   const [editLog, setEditLog] = useState<LogEntry | null>(null);
   const [editComments, setEditComments] = useState("");
   const [editDiaperStatus, setEditDiaperStatus] = useState<string | null>(null);
+  const [editDateStr, setEditDateStr] = useState("");
+  const [editStartTimeStr, setEditStartTimeStr] = useState("");
+  const [editEndTimeStr, setEditEndTimeStr] = useState("");
 
-  // Initialize edit form when opening the modal
   useEffect(() => {
     if (!editLog) return;
     setEditComments(editLog.comments ?? "");
     setEditDiaperStatus(editLog.diaperStatus ?? null);
+    const start = new Date(editLog.startTime);
+    setEditDateStr(toLocalDateStr(start));
+    setEditStartTimeStr(toLocalTimeStr(start));
+    if (editLog.endTime) {
+      setEditEndTimeStr(toLocalTimeStr(new Date(editLog.endTime)));
+    } else {
+      setEditEndTimeStr("");
+    }
   }, [editLog]);
 
   if (logs.length === 0) {
@@ -280,6 +300,18 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
 
     if (editLog.type === "diaper") {
       payload.diaperStatus = editDiaperStatus;
+    }
+
+    if (editDateStr && editStartTimeStr) {
+      const newStart = new Date(`${editDateStr}T${editStartTimeStr}`);
+      payload.startTime = newStart.toISOString();
+
+      if (editEndTimeStr) {
+        const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
+        payload.endTime = newEnd.toISOString();
+      } else {
+        payload.endTime = null;
+      }
     }
 
     try {
@@ -440,7 +472,7 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                   Edit log
                 </p>
                 <p className="mt-1 text-center text-xs text-gray-400">
-                  {TYPE_META[editLog.type]?.icon} {TYPE_META[editLog.type]?.label} {formatTime(editLog.startTime)}
+                  {TYPE_META[editLog.type]?.icon} {TYPE_META[editLog.type]?.label}
                 </p>
               </div>
               <button
@@ -451,6 +483,58 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                 Close
               </button>
             </div>
+
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Date
+            </label>
+            <input
+              type="date"
+              value={editDateStr}
+              onChange={(e) => setEditDateStr(e.target.value)}
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+            />
+
+            {editLog.type === "diaper" ? (
+              <>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={editStartTimeStr}
+                  onChange={(e) => {
+                    setEditStartTimeStr(e.target.value);
+                    setEditEndTimeStr(e.target.value);
+                  }}
+                  className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+                />
+              </>
+            ) : (
+              <div className="mb-3 flex gap-3">
+                <div className="flex-1">
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editStartTimeStr}
+                    onChange={(e) => setEditStartTimeStr(e.target.value)}
+                    className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editEndTimeStr}
+                    onChange={(e) => setEditEndTimeStr(e.target.value)}
+                    className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+                  />
+                </div>
+              </div>
+            )}
 
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Notes
