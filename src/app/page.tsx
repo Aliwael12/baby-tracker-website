@@ -9,7 +9,7 @@ import ManualEntry from "@/components/ManualEntry";
 import PageHeader from "@/components/PageHeader";
 import LastFeedBanner from "@/components/LastFeedBanner";
 
-const ACTIVITIES: ActivityType[] = ["pump", "feed", "sleep", "diaper", "shower"];
+const ACTIVITIES: ActivityType[] = ["feed", "pump", "sleep", "diaper", "shower"];
 
 export default function Home() {
   const [userName, setUserName] = useState<string | null>(null);
