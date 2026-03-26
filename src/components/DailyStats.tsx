@@ -50,7 +50,7 @@ export default function DailyStats({ logs }: DailyStatsProps) {
     { icon: "🤱", label: "Feeding", value: formatMinutes(stats.feedTime), sub: "total today" },
     { icon: "🍼", label: "Pumping", value: formatMinutes(stats.pumpTime), sub: "total today" },
     { icon: "😴", label: "Sleep", value: formatMinutes(stats.sleepTime), sub: "total today" },
-    { icon: "👶", label: "Diapers", value: String(stats.diaperCount), sub: "changed today" },
+    { icon: "🩲", label: "Diapers", value: String(stats.diaperCount), sub: "changed today" },
     { icon: "🚿", label: "Showers", value: String(stats.showerCount), sub: "taken today" },
   ];
 

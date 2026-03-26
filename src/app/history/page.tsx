@@ -19,7 +19,7 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   pump: { icon: "🍼", label: "Pump" },
   feed: { icon: "🤱", label: "Feed" },
   sleep: { icon: "😴", label: "Sleep" },
-  diaper: { icon: "👶", label: "Diaper" },
+  diaper: { icon: "🩲", label: "Diaper" },
   shower: { icon: "🚿", label: "Shower" },
 };
 
@@ -115,7 +115,7 @@ function DayStatsBar({ stats }: { stats: DayGroup["stats"] }) {
     { icon: "🤱", value: formatMinutes(stats.feedTime), show: stats.feedTime > 0 },
     { icon: "🍼", value: formatMinutes(stats.pumpTime), show: stats.pumpTime > 0 },
     { icon: "😴", value: formatMinutes(stats.sleepTime), show: stats.sleepTime > 0 },
-    { icon: "👶", value: `${stats.diaperCount}×`, show: stats.diaperCount > 0 },
+    { icon: "🩲", value: `${stats.diaperCount}×`, show: stats.diaperCount > 0 },
     { icon: "🚿", value: `${stats.showerCount}×`, show: stats.showerCount > 0 },
   ].filter((i) => i.show);
 

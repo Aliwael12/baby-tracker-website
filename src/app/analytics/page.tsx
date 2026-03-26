@@ -220,7 +220,7 @@ export default function AnalyticsPage() {
           totalCount={totalStats.sleepCount}
         />
         <StatCard
-          icon="👶"
+          icon="🩲"
           label="Diapers"
           today={String(todayStats.diaperCount)}
           avg={avgStats.diaperCount.toFixed(1)}
@@ -250,7 +250,7 @@ export default function AnalyticsPage() {
                     <th className="px-2 py-2 text-center font-semibold">🤱</th>
                     <th className="px-2 py-2 text-center font-semibold">🍼</th>
                     <th className="px-2 py-2 text-center font-semibold">😴</th>
-                    <th className="px-2 py-2 text-center font-semibold">👶</th>
+                    <th className="px-2 py-2 text-center font-semibold">🩲</th>
                     <th className="px-2 py-2 text-center font-semibold">🚿</th>
                   </tr>
                 </thead>

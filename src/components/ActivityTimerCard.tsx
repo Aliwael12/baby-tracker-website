@@ -17,7 +17,7 @@ const ACTIVITY_CONFIG: Record<
   pump: { label: "Pump", icon: "🍼", hasSide: true, hasTimer: true },
   feed: { label: "Feed", icon: "🤱", hasSide: true, hasTimer: true },
   sleep: { label: "Sleep", icon: "😴", hasSide: false, hasTimer: true },
-  diaper: { label: "Diaper", icon: "👶", hasSide: false, hasTimer: false },
+  diaper: { label: "Diaper", icon: "🩲", hasSide: false, hasTimer: false },
   shower: { label: "Shower", icon: "🚿", hasSide: false, hasTimer: true },
 };
 

@@ -14,7 +14,7 @@ const ACTIVITY_OPTIONS: { value: ActivityType; icon: string; label: string }[] =
   { value: "pump", icon: "🍼", label: "Pump" },
   { value: "feed", icon: "🤱", label: "Feed" },
   { value: "sleep", icon: "😴", label: "Sleep" },
-  { value: "diaper", icon: "👶", label: "Diaper" },
+  { value: "diaper", icon: "🩲", label: "Diaper" },
   { value: "shower", icon: "🚿", label: "Shower" },
 ];
 
