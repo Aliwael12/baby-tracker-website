@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import NamePrompt from "@/components/NamePrompt";
 import ActivityTimerCard from "@/components/ActivityTimerCard";
 import type { ActivityType } from "@/components/ActivityTimerCard";
-import LogsList from "@/components/LogsList";
 import ManualEntry from "@/components/ManualEntry";
 import PageHeader from "@/components/PageHeader";
 import LastFeedBanner from "@/components/LastFeedBanner";
 
-const ACTIVITIES: ActivityType[] = ["feed", "pump", "sleep", "diaper", "shower"];
+const AFTER_FEED: ActivityType[] = ["pump", "sleep", "diaper", "shower"];
 
 export default function Home() {
   const [userName, setUserName] = useState<string | null>(null);
@@ -52,25 +52,8 @@ export default function Home() {
     setShowEditName(true);
   };
 
-  const handleCancelEdit = () => {
-    setShowEditName(false);
-  };
-
-  const handleDeleteLog = useCallback(async (id: number) => {
-    setLogs((prev) => prev.filter((l) => l.id !== id));
-    try {
-      await fetch(`/api/logs/${id}`, { method: "DELETE" });
-    } catch {
-      fetchLogs();
-    }
-  }, [fetchLogs]);
-
   if (!nameLoaded || !userName || showEditName) {
-    return (
-      <NamePrompt
-        onNameSet={handleNameSet}
-      />
-    );
+    return <NamePrompt onNameSet={handleNameSet} />;
   }
 
   return (
@@ -79,14 +62,76 @@ export default function Home() {
         title="Touti's Tracker"
         subtitle={
           <p className="text-sm text-gray-400">
-            Hi, <button onClick={handleEditName} className="font-semibold text-baby-500 underline decoration-baby-200 underline-offset-2">{userName}</button>
+            Hi,{" "}
+            <button
+              type="button"
+              onClick={handleEditName}
+              className="font-semibold text-baby-500 underline decoration-baby-200 underline-offset-2"
+            >
+              {userName}
+            </button>
           </p>
+        }
+        actions={
+          <>
+            <Link
+              href="/log"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm transition-all active:scale-[0.95]"
+              aria-label="Open activity log"
+              title="Activity log"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-baby-500"
+                aria-hidden
+              >
+                <path
+                  d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowManualEntry(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm transition-all active:scale-[0.95]"
+              aria-label="Add manual entry"
+              title="Add manual entry"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-baby-500"
+                aria-hidden
+              >
+                <path
+                  d="M12 5v14M5 12h14"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </>
         }
       />
 
-      {/* Activity Cards */}
       <section className="mb-4 space-y-3">
-        {ACTIVITIES.map((type) => (
+        <ActivityTimerCard
+          type="feed"
+          userName={userName}
+          onLogSaved={fetchLogs}
+        />
+        <LastFeedBanner logs={logs} />
+        {AFTER_FEED.map((type) => (
           <ActivityTimerCard
             key={type}
             type={type}
@@ -96,17 +141,6 @@ export default function Home() {
         ))}
       </section>
 
-      {/* Manual Entry Button */}
-      <section className="mb-8">
-        <button
-          onClick={() => setShowManualEntry(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-baby-300 bg-baby-50/50 py-3 transition-all active:scale-[0.98]"
-        >
-          <span className="text-lg">📝</span>
-          <span className="text-sm font-semibold text-baby-500">Add Manual Entry</span>
-        </button>
-      </section>
-
       {showManualEntry && (
         <ManualEntry
           userName={userName}
@@ -114,18 +148,6 @@ export default function Home() {
           onClose={() => setShowManualEntry(false)}
         />
       )}
-
-      {/* Last Feed Indicator */}
-      <LastFeedBanner logs={logs} />
-
-      {/* Logs Timeline */}
-      <section>
-        <h2 className="mb-3 text-center text-sm font-semibold text-gray-400 uppercase tracking-widest">
-          Activity Log
-        </h2>
-        <LogsList logs={logs} onDelete={handleDeleteLog} onEdit={fetchLogs} />
-      </section>
-
     </div>
   );
 }
