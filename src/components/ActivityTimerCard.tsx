@@ -27,6 +27,8 @@ function formatTimer(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
+type TimelineEvent = { event: "started" | "paused" | "resumed" | "stopped"; at: string };
+
 interface TimerState {
   originalStartTimeISO: string;
   startTimeISO: string;
@@ -34,6 +36,7 @@ interface TimerState {
   paused: boolean;
   activeSide: "left" | "right" | null;
   pausedAtISO: string | null;
+  timeline: TimelineEvent[];
 }
 
 function storageKey(type: ActivityType): string {
@@ -82,6 +85,7 @@ export default function ActivityTimerCard({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const endTimeRef = useRef<Date | null>(null);
   const originalStartTimeRef = useRef<Date | null>(null);
+  const pauseTimelineRef = useRef<TimelineEvent[]>([]);
   const restoredRef = useRef(false);
 
   useEffect(() => {
@@ -97,6 +101,9 @@ export default function ActivityTimerCard({
     setPaused(saved.paused);
     setStartTime(restored);
     originalStartTimeRef.current = originalStart;
+    pauseTimelineRef.current = Array.isArray(saved.timeline)
+      ? saved.timeline
+      : [];
     if (saved.paused) {
       setElapsed(saved.pausedElapsed);
       if (saved.pausedAtISO) {
@@ -127,7 +134,12 @@ export default function ActivityTimerCard({
   const handleStart = useCallback(
     (side?: "left" | "right") => {
       if (startTime && !showComment && !paused) {
-        endTimeRef.current = new Date();
+        const stopAt = new Date();
+        endTimeRef.current = stopAt;
+        pauseTimelineRef.current.push({
+          event: "stopped",
+          at: stopAt.toISOString(),
+        });
         setShowComment(true);
         clearTimerState(type);
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -137,6 +149,7 @@ export default function ActivityTimerCard({
       setActiveSide(side || null);
       setStartTime(now);
       originalStartTimeRef.current = now;
+      pauseTimelineRef.current = [{ event: "started", at: now.toISOString() }];
       setElapsed(0);
       setPaused(false);
       pausedElapsedRef.current = 0;
@@ -148,6 +161,7 @@ export default function ActivityTimerCard({
         paused: false,
         activeSide: side || null,
         pausedAtISO: null,
+        timeline: pauseTimelineRef.current,
       });
     },
     [startTime, showComment, paused, type]
@@ -158,7 +172,11 @@ export default function ActivityTimerCard({
     if (!paused) {
       endTimeRef.current = new Date();
     }
-    // If paused, endTimeRef already holds the moment we paused
+    const stopAt = endTimeRef.current ?? new Date();
+    pauseTimelineRef.current.push({
+      event: "stopped",
+      at: stopAt.toISOString(),
+    });
     setShowComment(true);
     setPaused(false);
     clearTimerState(type);
@@ -172,6 +190,7 @@ export default function ActivityTimerCard({
     endTimeRef.current = now;
     setPaused(true);
     if (intervalRef.current) clearInterval(intervalRef.current);
+    pauseTimelineRef.current.push({ event: "paused", at: now.toISOString() });
     saveTimerState(type, {
       originalStartTimeISO: (originalStartTimeRef.current || startTime).toISOString(),
       startTimeISO: startTime.toISOString(),
@@ -179,6 +198,7 @@ export default function ActivityTimerCard({
       paused: true,
       activeSide,
       pausedAtISO: now.toISOString(),
+      timeline: pauseTimelineRef.current,
     });
   }, [startTime, paused, elapsed, type, activeSide]);
 
@@ -188,6 +208,7 @@ export default function ActivityTimerCard({
     setStartTime(now);
     setPaused(false);
     endTimeRef.current = null;
+    pauseTimelineRef.current.push({ event: "resumed", at: now.toISOString() });
     saveTimerState(type, {
       originalStartTimeISO: (originalStartTimeRef.current || now).toISOString(),
       startTimeISO: now.toISOString(),
@@ -195,6 +216,7 @@ export default function ActivityTimerCard({
       paused: false,
       activeSide,
       pausedAtISO: null,
+      timeline: pauseTimelineRef.current,
     });
   }, [paused, type, activeSide]);
 
@@ -223,6 +245,7 @@ export default function ActivityTimerCard({
     if (!startTime) return;
     setSaving(true);
 
+    const timeline = pauseTimelineRef.current;
     const payload = {
       type,
       side: activeSide,
@@ -231,6 +254,11 @@ export default function ActivityTimerCard({
       endTime: (endTimeRef.current || new Date()).toISOString(),
       comments: comment.trim() || null,
       enteredByName: userName,
+      pauseTimeline:
+        timeline.length > 0 &&
+        timeline.some((e) => e.event === "paused" || e.event === "resumed")
+          ? timeline
+          : null,
     };
 
     try {
@@ -255,6 +283,7 @@ export default function ActivityTimerCard({
       setSaving(false);
       endTimeRef.current = null;
       originalStartTimeRef.current = null;
+      pauseTimelineRef.current = [];
       clearTimerState(type);
     }
   };
@@ -272,6 +301,7 @@ export default function ActivityTimerCard({
     setComment("");
     endTimeRef.current = null;
     originalStartTimeRef.current = null;
+    pauseTimelineRef.current = [];
     clearTimerState(type);
   };
 

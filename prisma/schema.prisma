@@ -19,5 +19,6 @@ model ActivityLog {
   durationMinutes Float?
   comments        String?
   enteredByName   String
+  pauseTimelineJson String? @db.Text
   createdAt       DateTime  @default(now())
 }

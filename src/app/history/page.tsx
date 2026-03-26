@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import PageHeader from "@/components/PageHeader";
+import PauseTimelineIndicator from "@/components/PauseTimelineIndicator";
 
 interface LogEntry {
   id: number;
@@ -13,6 +14,7 @@ interface LogEntry {
   durationMinutes: number | null;
   comments: string | null;
   enteredByName: string;
+  pauseTimelineJson?: string | null;
 }
 
 const TYPE_META: Record<string, { icon: string; label: string }> = {
@@ -259,6 +261,7 @@ export default function HistoryPage() {
                                   </>
                                 )}
                               </div>
+                              <PauseTimelineIndicator pauseTimelineJson={log.pauseTimelineJson} />
                               {log.type === "diaper" && log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus] && (
                                 <div className="mt-0.5">
                                   <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">

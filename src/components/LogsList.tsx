@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import PauseTimelineIndicator from "@/components/PauseTimelineIndicator";
 
 interface LogEntry {
   id: number;
@@ -14,6 +15,7 @@ interface LogEntry {
   durationMinutes: number | null;
   comments: string | null;
   enteredByName: string;
+  pauseTimelineJson?: string | null;
   createdAt: string;
 }
 
@@ -397,6 +399,7 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                         </>
                       )}
                     </div>
+                    <PauseTimelineIndicator pauseTimelineJson={log.pauseTimelineJson} />
                     {showGap && (
                       <div className="mt-1">
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">

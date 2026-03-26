@@ -13,7 +13,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const { type, side, diaperStatus, weightKg, heightCm, startTime, endTime, comments, enteredByName } = body;
+  const {
+    type,
+    side,
+    diaperStatus,
+    weightKg,
+    heightCm,
+    startTime,
+    endTime,
+    comments,
+    enteredByName,
+    pauseTimeline,
+  } = body;
 
   if (!type || !startTime || !enteredByName) {
     return NextResponse.json(
@@ -51,6 +62,15 @@ export async function POST(req: NextRequest) {
   const durationMinutes =
     end ? (end.getTime() - start.getTime()) / 60000 : null;
 
+  let pauseTimelineJson: string | null = null;
+  if (Array.isArray(pauseTimeline) && pauseTimeline.length > 0) {
+    try {
+      pauseTimelineJson = JSON.stringify(pauseTimeline);
+    } catch {
+      pauseTimelineJson = null;
+    }
+  }
+
   const log = await prisma.activityLog.create({
     data: {
       type,
@@ -63,6 +83,7 @@ export async function POST(req: NextRequest) {
       durationMinutes,
       comments: comments || null,
       enteredByName,
+      pauseTimelineJson,
     },
   });
 
