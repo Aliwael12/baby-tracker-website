@@ -6,17 +6,22 @@ import Sidebar from "./Sidebar";
 interface PageHeaderProps {
   title: string;
   subtitle?: React.ReactNode;
+  /** Shown left of the menu button (e.g. home link on activity log) */
+  leadingAction?: React.ReactNode;
   /** Icon buttons shown on the right (e.g. home: log + manual entry) */
   actions?: React.ReactNode;
 }
 
-export default function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, leadingAction, actions }: PageHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <header className="mb-6 flex items-start gap-2">
+        {leadingAction ? (
+          <div className="mt-1 shrink-0">{leadingAction}</div>
+        ) : null}
         <button
           onClick={() => setSidebarOpen(true)}
           className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm transition-all active:scale-[0.95]"

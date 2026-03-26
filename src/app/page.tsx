@@ -125,12 +125,12 @@ export default function Home() {
       />
 
       <section className="mb-4 space-y-3">
+        <LastFeedBanner logs={logs} />
         <ActivityTimerCard
           type="feed"
           userName={userName}
           onLogSaved={fetchLogs}
         />
-        <LastFeedBanner logs={logs} />
         {AFTER_FEED.map((type) => (
           <ActivityTimerCard
             key={type}

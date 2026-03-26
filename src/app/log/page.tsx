@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import NamePrompt from "@/components/NamePrompt";
 import LogsList from "@/components/LogsList";
 import PageHeader from "@/components/PageHeader";
@@ -52,6 +53,30 @@ export default function ActivityLogPage() {
   return (
     <div className="mx-auto max-w-md px-4 pb-8 pt-6">
       <PageHeader
+        leadingAction={
+          <Link
+            href="/"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm transition-all active:scale-[0.95]"
+            aria-label="Back to home"
+            title="Home"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="text-baby-500"
+              aria-hidden
+            >
+              <path
+                d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+        }
         title="Activity Log"
         subtitle={
           <p className="text-sm text-gray-400">
