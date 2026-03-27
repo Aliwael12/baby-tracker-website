@@ -6,15 +6,7 @@ interface LogEntry {
   type: string;
   startTime: string;
   side?: string | null;
-  diaperStatus?: string | null;
 }
-
-const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
-  empty: { icon: "✅", label: "Empty" },
-  wet: { icon: "💧", label: "Wet" },
-  dirty: { icon: "💩", label: "Dirty" },
-  wet_and_dirty: { icon: "💧💩", label: "Wet & Dirty" },
-};
 
 function sideToLetter(side: string | null | undefined): "L" | "R" | null {
   if (side === "left") return "L";
@@ -65,10 +57,6 @@ export default function LastFeedBanner({ logs }: LastFeedBannerProps) {
   const feedSide = lastFeed ? sideToLetter(lastFeed.side) : null;
   const feedElapsed = lastFeed ? now - new Date(lastFeed.startTime).getTime() : 0;
   const diaperElapsed = lastDiaper ? now - new Date(lastDiaper.startTime).getTime() : 0;
-  const diaperMeta =
-    lastDiaper?.diaperStatus && DIAPER_STATUS_META[lastDiaper.diaperStatus]
-      ? DIAPER_STATUS_META[lastDiaper.diaperStatus]
-      : null;
 
   return (
     <div className="mb-4 space-y-2">
@@ -91,14 +79,6 @@ export default function LastFeedBanner({ logs }: LastFeedBannerProps) {
           <span className="text-sm text-gray-600">
             🩲 Last diaper change was:{" "}
             <span className="font-bold text-baby-600">{formatElapsed(diaperElapsed)}</span>
-            {diaperMeta ? (
-              <>
-                {" "}
-                <span className="font-medium text-amber-800">
-                  {diaperMeta.icon} {diaperMeta.label}
-                </span>
-              </>
-            ) : null}
           </span>
         </div>
       )}
