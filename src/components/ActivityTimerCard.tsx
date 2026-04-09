@@ -18,7 +18,7 @@ const ACTIVITY_CONFIG: Record<
   feed: { label: "Feed", icon: "🤱", hasSide: true, hasTimer: true },
   sleep: { label: "Sleep", icon: "😴", hasSide: false, hasTimer: true },
   diaper: { label: "Diaper", icon: "🩲", hasSide: false, hasTimer: false },
-  shower: { label: "Shower", icon: "🚿", hasSide: false, hasTimer: true },
+  shower: { label: "Shower", icon: "🚿", hasSide: false, hasTimer: false },
 };
 
 function formatTimer(seconds: number): string {
@@ -221,18 +221,47 @@ export default function ActivityTimerCard({
   }, [paused, type, activeSide]);
 
   const handleInstantLog = useCallback(
-    (side?: "left" | "right") => {
+    async (side?: "left" | "right") => {
       const now = new Date();
+      if (type === "diaper") {
+        setActiveSide(side || null);
+        setStartTime(now);
+        endTimeRef.current = now;
+        setShowDiaperStatus(true);
+        return;
+      }
+      if (type === "shower") {
+        if (saving) return;
+        setSaving(true);
+        try {
+          await fetch("/api/logs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type,
+              side: null,
+              diaperStatus: null,
+              startTime: now.toISOString(),
+              endTime: now.toISOString(),
+              comments: null,
+              enteredByName: userName,
+              pauseTimeline: null,
+            }),
+          });
+          onLogSaved();
+        } catch {
+          // ignore
+        } finally {
+          setSaving(false);
+        }
+        return;
+      }
       setActiveSide(side || null);
       setStartTime(now);
       endTimeRef.current = now;
-      if (type === "diaper") {
-        setShowDiaperStatus(true);
-      } else {
-        setShowComment(true);
-      }
+      setShowComment(true);
     },
-    [type]
+    [type, saving, userName, onLogSaved]
   );
 
   const handleDiaperStatusSelect = (status: string) => {
@@ -454,10 +483,13 @@ export default function ActivityTimerCard({
       <div className="rounded-2xl bg-white p-4 shadow-md">
         <button
           onClick={() => handleInstantLog()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 transition-all active:scale-[0.95]"
+          disabled={saving}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 transition-all active:scale-[0.95] disabled:opacity-60"
         >
           <span className="text-2xl">{config.icon}</span>
-          <span className="font-semibold text-baby-600">{config.label}</span>
+          <span className="font-semibold text-baby-600">
+            {saving && type === "shower" ? "Saving..." : config.label}
+          </span>
         </button>
       </div>
     );
