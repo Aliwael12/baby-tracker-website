@@ -23,6 +23,24 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
 
+function toLocalDateStr(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function toLocalTimeStr(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Same calendar day as `dateStr` (YYYY-MM-DD), using the current local clock time. */
+function toIsoOnDateWithCurrentClock(dateStr: string): string {
+  const now = new Date();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const t = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  return new Date(`${dateStr}T${t}`).toISOString();
+}
+
 export default function GrowthPage() {
   const [logs, setLogs] = useState<GrowthLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +49,16 @@ export default function GrowthPage() {
   const [height, setHeight] = useState("");
   const [comments, setComments] = useState("");
   const [saving, setSaving] = useState(false);
+  const [logDateChoice, setLogDateChoice] = useState<"today" | "custom">("today");
+  const [customDate, setCustomDate] = useState(() => toLocalDateStr(new Date()));
+
+  const [editingLog, setEditingLog] = useState<GrowthLog | null>(null);
+  const [editWeight, setEditWeight] = useState("");
+  const [editHeight, setEditHeight] = useState("");
+  const [editComments, setEditComments] = useState("");
+  const [editDateStr, setEditDateStr] = useState("");
+  const [editTimeStr, setEditTimeStr] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const userName = typeof window !== "undefined"
     ? localStorage.getItem("babytracker_username") || "Unknown"
@@ -54,6 +82,24 @@ export default function GrowthPage() {
     fetchLogs();
   }, [fetchLogs]);
 
+  useEffect(() => {
+    if (!editingLog) return;
+    setEditComments(editingLog.comments ?? "");
+    const start = new Date(editingLog.startTime);
+    setEditDateStr(toLocalDateStr(start));
+    setEditTimeStr(toLocalTimeStr(start));
+    setEditWeight(
+      editingLog.weightKg !== null && editingLog.weightKg !== undefined
+        ? String(editingLog.weightKg)
+        : ""
+    );
+    setEditHeight(
+      editingLog.heightCm !== null && editingLog.heightCm !== undefined
+        ? String(editingLog.heightCm)
+        : ""
+    );
+  }, [editingLog]);
+
   const latestWeight = useMemo(() => {
     const withWeight = logs.filter((l) => l.weightKg !== null);
     return withWeight.length > 0 ? withWeight[0] : null;
@@ -68,13 +114,17 @@ export default function GrowthPage() {
     if (!weight && !height) return;
     setSaving(true);
 
-    const now = new Date();
+    const startIso =
+      logDateChoice === "today"
+        ? new Date().toISOString()
+        : toIsoOnDateWithCurrentClock(customDate);
+
     const payload = {
       type: "growth",
       weightKg: weight ? parseFloat(weight) : null,
       heightCm: height ? parseFloat(height) : null,
-      startTime: now.toISOString(),
-      endTime: now.toISOString(),
+      startTime: startIso,
+      endTime: startIso,
       comments: comments.trim() || null,
       enteredByName: userName,
     };
@@ -90,11 +140,52 @@ export default function GrowthPage() {
       setWeight("");
       setHeight("");
       setComments("");
+      setLogDateChoice("today");
+      setCustomDate(toLocalDateStr(new Date()));
     } catch {
       // ignore
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingLog) return;
+    const w = editWeight.trim() ? parseFloat(editWeight) : null;
+    const h = editHeight.trim() ? parseFloat(editHeight) : null;
+    if (w == null && h == null) return;
+
+    setEditSaving(true);
+    const newStart = new Date(`${editDateStr}T${editTimeStr}`);
+    const startIso = newStart.toISOString();
+
+    try {
+      const res = await fetch(`/api/logs/${editingLog.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          weightKg: w,
+          heightCm: h,
+          comments: editComments.trim() ? editComments.trim() : null,
+          startTime: startIso,
+          endTime: startIso,
+        }),
+      });
+      if (res.ok) {
+        await fetchLogs();
+        setEditingLog(null);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const openForm = () => {
+    setShowForm(true);
+    setLogDateChoice("today");
+    setCustomDate(toLocalDateStr(new Date()));
   };
 
   if (loading) {
@@ -137,7 +228,7 @@ export default function GrowthPage() {
       {/* Add button */}
       {!showForm && (
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openForm}
           className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-baby-300 bg-baby-50/50 py-3 transition-all active:scale-[0.98]"
         >
           <span className="text-lg">➕</span>
@@ -149,6 +240,42 @@ export default function GrowthPage() {
       {showForm && (
         <div className="animate-slide-up mb-6 rounded-2xl bg-white p-5 shadow-md">
           <h3 className="mb-4 text-center text-sm font-bold text-gray-700">New Measurement</h3>
+
+          <p className="mb-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Date
+          </p>
+          <div className="mb-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setLogDateChoice("today")}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.97] ${
+                logDateChoice === "today"
+                  ? "bg-baby-400 text-white shadow-sm"
+                  : "border-2 border-baby-200 bg-baby-50 text-baby-600"
+              }`}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => setLogDateChoice("custom")}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.97] ${
+                logDateChoice === "custom"
+                  ? "bg-baby-400 text-white shadow-sm"
+                  : "border-2 border-baby-200 bg-baby-50 text-baby-600"
+              }`}
+            >
+              Another date
+            </button>
+          </div>
+          {logDateChoice === "custom" && (
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+            />
+          )}
 
           <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Weight (kg)
@@ -194,6 +321,8 @@ export default function GrowthPage() {
                 setWeight("");
                 setHeight("");
                 setComments("");
+                setLogDateChoice("today");
+                setCustomDate(toLocalDateStr(new Date()));
               }}
               className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-500 transition-all active:scale-[0.97]"
             >
@@ -251,10 +380,119 @@ export default function GrowthPage() {
                   <div className="mt-0.5 text-[11px] text-gray-300">
                     by {log.enteredByName}
                   </div>
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setEditingLog(log)}
+                      className="rounded-xl border border-baby-200 bg-baby-50 px-2.5 py-1.5 text-sm font-semibold text-baby-600 transition-all active:scale-[0.97]"
+                      aria-label="Edit measurement"
+                    >
+                      ✏️ Edit
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {editingLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+          <div className="w-full max-w-xs animate-slide-up rounded-2xl bg-white p-5 shadow-xl">
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-center text-base font-semibold text-gray-800">
+                  Edit measurement
+                </p>
+                <p className="mt-1 text-center text-xs text-gray-400">📏 Growth</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingLog(null)}
+                className="shrink-0 text-xs text-gray-400"
+              >
+                Close
+              </button>
+            </div>
+
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Date
+            </label>
+            <input
+              type="date"
+              value={editDateStr}
+              onChange={(e) => setEditDateStr(e.target.value)}
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+            />
+
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Time
+            </label>
+            <input
+              type="time"
+              value={editTimeStr}
+              onChange={(e) => setEditTimeStr(e.target.value)}
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+            />
+
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Weight (kg)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={editWeight}
+              onChange={(e) => setEditWeight(e.target.value)}
+              placeholder="e.g. 4.5"
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Height (cm)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              value={editHeight}
+              onChange={(e) => setEditHeight(e.target.value)}
+              placeholder="e.g. 52"
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Notes
+            </label>
+            <input
+              type="text"
+              value={editComments}
+              onChange={(e) => setEditComments(e.target.value)}
+              placeholder="Optional"
+              className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingLog(null)}
+                className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-500 transition-all active:scale-[0.97]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                disabled={
+                  editSaving || (!editWeight.trim() && !editHeight.trim())
+                }
+                className="flex-1 rounded-xl bg-baby-400 py-2.5 text-sm font-semibold text-white shadow transition-all active:scale-[0.97] disabled:opacity-40"
+              >
+                {editSaving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -32,11 +32,13 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { comments, diaperStatus, startTime, endTime } = body as {
+  const { comments, diaperStatus, startTime, endTime, weightKg, heightCm } = body as {
     comments?: string | null;
     diaperStatus?: string | null;
     startTime?: string | null;
     endTime?: string | null;
+    weightKg?: number | string | null;
+    heightCm?: number | string | null;
   };
 
   const validDiaperStatuses = ["empty", "wet", "dirty", "wet_and_dirty"];
@@ -78,14 +80,42 @@ export async function PATCH(
     }
   }
 
+  const existingForDuration = await prisma.activityLog.findUnique({ where: { id: numId } });
+  if (!existingForDuration) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (weightKg !== undefined || heightCm !== undefined) {
+    if (existingForDuration.type !== "growth") {
+      return NextResponse.json(
+        { error: "Weight and height can only be updated on growth logs" },
+        { status: 400 }
+      );
+    }
+    const parseGrowthNum = (v: number | string | null | undefined, existing: number | null) => {
+      if (v === undefined) return existing;
+      if (v === null || v === "") return null;
+      const n = typeof v === "number" ? v : parseFloat(v);
+      return isNaN(n) ? null : n;
+    };
+    const nextW = parseGrowthNum(weightKg, existingForDuration.weightKg);
+    const nextH = parseGrowthNum(heightCm, existingForDuration.heightCm);
+    if (nextW == null && nextH == null) {
+      return NextResponse.json(
+        { error: "At least one of weight or height is required for growth" },
+        { status: 400 }
+      );
+    }
+    data.weightKg = nextW;
+    data.heightCm = nextH;
+  }
+
   if (data.startTime || data.endTime !== undefined) {
-    const existing = await prisma.activityLog.findUnique({ where: { id: numId } });
-    if (existing) {
-      const finalStart = (data.startTime as Date) ?? existing.startTime;
-      const finalEnd = data.endTime === null ? null : (data.endTime as Date | undefined) ?? existing.endTime;
-      if (finalStart && finalEnd) {
-        data.durationMinutes = (finalEnd.getTime() - finalStart.getTime()) / 60000;
-      }
+    const existing = existingForDuration;
+    const finalStart = (data.startTime as Date) ?? existing.startTime;
+    const finalEnd = data.endTime === null ? null : (data.endTime as Date | undefined) ?? existing.endTime;
+    if (finalStart && finalEnd) {
+      data.durationMinutes = (finalEnd.getTime() - finalStart.getTime()) / 60000;
     }
   }
 

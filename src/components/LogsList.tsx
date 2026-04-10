@@ -260,6 +260,8 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
   const [editDateStr, setEditDateStr] = useState("");
   const [editStartTimeStr, setEditStartTimeStr] = useState("");
   const [editEndTimeStr, setEditEndTimeStr] = useState("");
+  const [editWeightStr, setEditWeightStr] = useState("");
+  const [editHeightStr, setEditHeightStr] = useState("");
 
   useEffect(() => {
     if (!editLog) return;
@@ -272,6 +274,21 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
       setEditEndTimeStr(toLocalTimeStr(new Date(editLog.endTime)));
     } else {
       setEditEndTimeStr("");
+    }
+    if (editLog.type === "growth") {
+      setEditWeightStr(
+        editLog.weightKg !== null && editLog.weightKg !== undefined
+          ? String(editLog.weightKg)
+          : ""
+      );
+      setEditHeightStr(
+        editLog.heightCm !== null && editLog.heightCm !== undefined
+          ? String(editLog.heightCm)
+          : ""
+      );
+    } else {
+      setEditWeightStr("");
+      setEditHeightStr("");
     }
   }, [editLog]);
 
@@ -304,11 +321,21 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
       payload.diaperStatus = editDiaperStatus;
     }
 
+    if (editLog.type === "growth") {
+      const w = editWeightStr.trim() ? parseFloat(editWeightStr) : null;
+      const h = editHeightStr.trim() ? parseFloat(editHeightStr) : null;
+      if (w == null && h == null) return;
+      payload.weightKg = w;
+      payload.heightCm = h;
+    }
+
     if (editDateStr && editStartTimeStr) {
       const newStart = new Date(`${editDateStr}T${editStartTimeStr}`);
       payload.startTime = newStart.toISOString();
 
-      if (editEndTimeStr) {
+      if (editLog.type === "diaper" || editLog.type === "growth") {
+        payload.endTime = newStart.toISOString();
+      } else if (editEndTimeStr) {
         const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
         payload.endTime = newEnd.toISOString();
       } else {
@@ -497,7 +524,7 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
               className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
             />
 
-            {editLog.type === "diaper" ? (
+            {editLog.type === "diaper" || editLog.type === "growth" ? (
               <>
                 <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Time
@@ -537,6 +564,35 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                   />
                 </div>
               </div>
+            )}
+
+            {editLog.type === "growth" && (
+              <>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Weight (kg)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editWeightStr}
+                  onChange={(e) => setEditWeightStr(e.target.value)}
+                  placeholder="e.g. 4.5"
+                  className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+                />
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Height (cm)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={editHeightStr}
+                  onChange={(e) => setEditHeightStr(e.target.value)}
+                  placeholder="e.g. 52"
+                  className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+                />
+              </>
             )}
 
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
