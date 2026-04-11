@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import PageHeader from "@/components/PageHeader";
+import { SwipeableRow, DeleteConfirm } from "@/components/SwipeableLogRow";
 
 interface GrowthLog {
   id: number;
@@ -59,6 +60,7 @@ export default function GrowthPage() {
   const [editDateStr, setEditDateStr] = useState("");
   const [editTimeStr, setEditTimeStr] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const userName = typeof window !== "undefined"
     ? localStorage.getItem("babytracker_username") || "Unknown"
@@ -148,6 +150,18 @@ export default function GrowthPage() {
       setSaving(false);
     }
   };
+
+  const handleDeleteLog = useCallback(
+    async (id: number) => {
+      setLogs((prev) => prev.filter((l) => l.id !== id));
+      try {
+        await fetch(`/api/logs/${id}`, { method: "DELETE" });
+      } catch {
+        fetchLogs();
+      }
+    },
+    [fetchLogs]
+  );
 
   const handleSaveEdit = async () => {
     if (!editingLog) return;
@@ -351,50 +365,65 @@ export default function GrowthPage() {
       ) : (
         <div className="space-y-2">
           {logs.map((log) => (
-            <div key={log.id} className="animate-slide-up rounded-2xl bg-white p-3 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50 text-xl">
-                  📏
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-3">
-                    {log.weightKg !== null && (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
-                        ⚖️ {log.weightKg} kg
-                      </span>
+            <SwipeableRow
+              key={log.id}
+              onDelete={() => setPendingDeleteId(log.id)}
+            >
+              <div className="animate-slide-up rounded-2xl bg-white p-3 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50 text-xl">
+                    📏
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-3">
+                      {log.weightKg !== null && (
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
+                          ⚖️ {log.weightKg} kg
+                        </span>
+                      )}
+                      {log.heightCm !== null && (
+                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-600">
+                          📏 {log.heightCm} cm
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-400">
+                      {formatDate(log.startTime)}
+                    </div>
+                    {log.comments && (
+                      <p className="mt-0.5 text-xs text-gray-500 italic">
+                        &ldquo;{log.comments}&rdquo;
+                      </p>
                     )}
-                    {log.heightCm !== null && (
-                      <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-600">
-                        📏 {log.heightCm} cm
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs text-gray-400">
-                    {formatDate(log.startTime)}
-                  </div>
-                  {log.comments && (
-                    <p className="mt-0.5 text-xs text-gray-500 italic">
-                      &ldquo;{log.comments}&rdquo;
-                    </p>
-                  )}
-                  <div className="mt-0.5 text-[11px] text-gray-300">
-                    by {log.enteredByName}
-                  </div>
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setEditingLog(log)}
-                      className="rounded-xl border border-baby-200 bg-baby-50 px-2.5 py-1.5 text-sm font-semibold text-baby-600 transition-all active:scale-[0.97]"
-                      aria-label="Edit measurement"
-                    >
-                      ✏️ Edit
-                    </button>
+                    <div className="mt-0.5 text-[11px] text-gray-300">
+                      by {log.enteredByName}
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setEditingLog(log)}
+                        className="rounded-xl border border-baby-200 bg-baby-50 px-2.5 py-1.5 text-sm font-semibold text-baby-600 transition-all active:scale-[0.97]"
+                        aria-label="Edit measurement"
+                      >
+                        ✏️ Edit
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </SwipeableRow>
           ))}
         </div>
+      )}
+
+      {pendingDeleteId !== null && (
+        <DeleteConfirm
+          onConfirm={() => {
+            handleDeleteLog(pendingDeleteId);
+            setPendingDeleteId(null);
+          }}
+          onCancel={() => setPendingDeleteId(null)}
+        />
       )}
 
       {editingLog && (
