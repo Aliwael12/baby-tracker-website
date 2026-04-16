@@ -14,7 +14,8 @@ const ACTIVITY_CONFIG: Record<
   ActivityType,
   { label: string; icon: string; hasSide: boolean; hasTimer: boolean }
 > = {
-  pump: { label: "Pump", icon: "🍼", hasSide: true, hasTimer: true },
+  // Pump is an instant log (like shower): no timer/elapsed UI.
+  pump: { label: "Pump", icon: "🍼", hasSide: true, hasTimer: false },
   feed: { label: "Feed", icon: "🤱", hasSide: true, hasTimer: true },
   sleep: { label: "Sleep", icon: "😴", hasSide: false, hasTimer: true },
   diaper: { label: "Diaper", icon: "🩲", hasSide: false, hasTimer: false },
@@ -256,6 +257,32 @@ export default function ActivityTimerCard({
         }
         return;
       }
+      if (type === "pump") {
+        if (saving) return;
+        setSaving(true);
+        try {
+          await fetch("/api/logs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type,
+              side: side || null,
+              diaperStatus: null,
+              startTime: now.toISOString(),
+              endTime: now.toISOString(),
+              comments: null,
+              enteredByName: userName,
+              pauseTimeline: null,
+            }),
+          });
+          onLogSaved();
+        } catch {
+          // ignore
+        } finally {
+          setSaving(false);
+        }
+        return;
+      }
       setActiveSide(side || null);
       setStartTime(now);
       endTimeRef.current = now;
@@ -419,6 +446,51 @@ export default function ActivityTimerCard({
     );
   }
 
+  if (!config.hasTimer) {
+    // Instant logs (shower/diaper/pump).
+    if (config.hasSide) {
+      // Pump needs side selection but does not use a timer.
+      return (
+        <div className="rounded-2xl bg-white p-4 shadow-md">
+          <div className="mb-2 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
+            {config.icon} {config.label}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleInstantLog("left")}
+              disabled={saving}
+              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-3 text-center text-sm font-semibold text-baby-600 transition-all active:scale-[0.95] disabled:opacity-60"
+            >
+              🫲 L
+            </button>
+            <button
+              onClick={() => handleInstantLog("right")}
+              disabled={saving}
+              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-3 text-center text-sm font-semibold text-baby-600 transition-all active:scale-[0.95] disabled:opacity-60"
+            >
+              🫱 R
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-2xl bg-white p-4 shadow-md">
+        <button
+          onClick={() => handleInstantLog()}
+          disabled={saving}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 transition-all active:scale-[0.95] disabled:opacity-60"
+        >
+          <span className="text-2xl">{config.icon}</span>
+          <span className="font-semibold text-baby-600">
+            {saving && type === "shower" ? "Saving..." : config.label}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   if (config.hasSide) {
     return (
       <div className="rounded-2xl bg-white p-4 shadow-md">
@@ -474,23 +546,6 @@ export default function ActivityTimerCard({
             </button>
           </div>
         )}
-      </div>
-    );
-  }
-
-  if (!config.hasTimer) {
-    return (
-      <div className="rounded-2xl bg-white p-4 shadow-md">
-        <button
-          onClick={() => handleInstantLog()}
-          disabled={saving}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 transition-all active:scale-[0.95] disabled:opacity-60"
-        >
-          <span className="text-2xl">{config.icon}</span>
-          <span className="font-semibold text-baby-600">
-            {saving && type === "shower" ? "Saving..." : config.label}
-          </span>
-        </button>
       </div>
     );
   }

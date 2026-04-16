@@ -71,7 +71,7 @@ interface DayGroup {
   logs: LogEntry[];
   stats: {
     feedTime: number;
-    pumpTime: number;
+    pumpCount: number;
     sleepTime: number;
     diaperCount: number;
     showerCount: number;
@@ -101,7 +101,7 @@ function groupByDay(logs: LogEntry[]): DayGroup[] {
       logs: dayLogs,
       stats: {
         feedTime: totalTime("feed"),
-        pumpTime: totalTime("pump"),
+        pumpCount: count("pump"),
         sleepTime: totalTime("sleep"),
         diaperCount: count("diaper"),
         showerCount: count("shower"),
@@ -115,7 +115,7 @@ function groupByDay(logs: LogEntry[]): DayGroup[] {
 function DayStatsBar({ stats }: { stats: DayGroup["stats"] }) {
   const items = [
     { icon: "🤱", value: formatMinutes(stats.feedTime), show: stats.feedTime > 0 },
-    { icon: "🍼", value: formatMinutes(stats.pumpTime), show: stats.pumpTime > 0 },
+    { icon: "🍼", value: `${stats.pumpCount}×`, show: stats.pumpCount > 0 },
     { icon: "😴", value: formatMinutes(stats.sleepTime), show: stats.sleepTime > 0 },
     { icon: "🩲", value: `${stats.diaperCount}×`, show: stats.diaperCount > 0 },
     { icon: "🚿", value: `${stats.showerCount}×`, show: stats.showerCount > 0 },

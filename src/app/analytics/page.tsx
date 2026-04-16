@@ -145,7 +145,15 @@ export default function AnalyticsPage() {
     const dayCount = allDays.length || 1;
     const todayKey = new Date().toDateString();
     const today = allDays.find((d) => d.dateKey === todayKey) || {
-      feedTime: 0, pumpTime: 0, sleepTime: 0, diaperCount: 0, showerCount: 0, totalLogs: 0,
+      feedTime: 0,
+      feedCount: 0,
+      pumpTime: 0,
+      pumpCount: 0,
+      sleepTime: 0,
+      sleepCount: 0,
+      diaperCount: 0,
+      showerCount: 0,
+      totalLogs: 0,
     };
 
     const sum = (fn: (d: DayStats) => number) => allDays.reduce((s, d) => s + fn(d), 0);
@@ -156,7 +164,7 @@ export default function AnalyticsPage() {
       dayCount,
       avgStats: {
         feedTime: sum((d) => d.feedTime) / dayCount,
-        pumpTime: sum((d) => d.pumpTime) / dayCount,
+        pumpCount: sum((d) => d.pumpCount) / dayCount,
         sleepTime: sum((d) => d.sleepTime) / dayCount,
         diaperCount: sum((d) => d.diaperCount) / dayCount,
         showerCount: sum((d) => d.showerCount) / dayCount,
@@ -206,10 +214,9 @@ export default function AnalyticsPage() {
         <StatCard
           icon="🍼"
           label="Pumping"
-          today={formatMinutes(todayStats.pumpTime)}
-          avg={formatMinutes(Math.round(avgStats.pumpTime))}
-          total={formatMinutes(totalStats.pumpTime)}
-          totalCount={totalStats.pumpCount}
+          today={String(todayStats.pumpCount)}
+          avg={String(Math.round(avgStats.pumpCount))}
+          total={String(totalStats.pumpCount)}
         />
         <StatCard
           icon="😴"
@@ -265,7 +272,7 @@ export default function AnalyticsPage() {
                         {day.feedTime > 0 ? formatMinutes(day.feedTime) : "—"}
                       </td>
                       <td className="px-2 py-2 text-center text-gray-600">
-                        {day.pumpTime > 0 ? formatMinutes(day.pumpTime) : "—"}
+                        {day.pumpCount > 0 ? `${day.pumpCount}×` : "—"}
                       </td>
                       <td className="px-2 py-2 text-center text-gray-600">
                         {day.sleepTime > 0 ? formatMinutes(day.sleepTime) : "—"}
