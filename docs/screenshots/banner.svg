@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" font-family="Inter, Segoe UI, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffe0e8"/>
+      <stop offset="55%" stop-color="#ff99b8"/>
+      <stop offset="100%" stop-color="#ff3d72"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.2" r="0.7">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#ffffff" fill-opacity="0.25"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="360" fill="url(#bg)"/>
+  <rect width="1200" height="360" fill="url(#dots)"/>
+  <rect width="1200" height="360" fill="url(#glow)"/>
+
+  <!-- floating bubble icons -->
+  <g font-size="28" opacity="0.9">
+    <g transform="translate(900 70)"><circle r="32" fill="#ffffff"/><text text-anchor="middle" y="9">🤱</text></g>
+    <g transform="translate(990 130)"><circle r="28" fill="#ffffff"/><text text-anchor="middle" y="8">🍼</text></g>
+    <g transform="translate(1080 80)"><circle r="26" fill="#ffffff"/><text text-anchor="middle" y="8">😴</text></g>
+    <g transform="translate(1090 200)"><circle r="26" fill="#ffffff"/><text text-anchor="middle" y="8">🩲</text></g>
+    <g transform="translate(990 250)"><circle r="26" fill="#ffffff"/><text text-anchor="middle" y="8">🚿</text></g>
+  </g>
+
+  <!-- logo block -->
+  <g transform="translate(80 110)">
+    <rect width="120" height="120" rx="32" fill="#ffffff"/>
+    <text x="60" y="80" text-anchor="middle" font-size="62">👶</text>
+  </g>
+
+  <!-- title -->
+  <text x="240" y="160" fill="#ffffff" font-size="62" font-weight="800" letter-spacing="-1">Baby Tracker</text>
+  <text x="240" y="205" fill="#fff5f7" font-size="22" font-weight="500">Feeds · Pumps · Sleep · Diapers · Growth — all in one place</text>
+
+  <!-- chips -->
+  <g font-size="14" font-weight="700" fill="#e02060">
+    <g transform="translate(240 240)">
+      <rect width="120" height="34" rx="17" fill="#ffffff"/>
+      <text x="60" y="22" text-anchor="middle">Next.js 16</text>
+    </g>
+    <g transform="translate(370 240)">
+      <rect width="120" height="34" rx="17" fill="#ffffff"/>
+      <text x="60" y="22" text-anchor="middle">React 19</text>
+    </g>
+    <g transform="translate(500 240)">
+      <rect width="120" height="34" rx="17" fill="#ffffff"/>
+      <text x="60" y="22" text-anchor="middle">Prisma</text>
+    </g>
+    <g transform="translate(630 240)">
+      <rect width="140" height="34" rx="17" fill="#ffffff"/>
+      <text x="70" y="22" text-anchor="middle">Tailwind v4</text>
+    </g>
+  </g>
+
+  <!-- soft underline -->
+  <path d="M0 320 Q300 280 600 320 T1200 320 L1200 360 L0 360 Z" fill="#ffffff" fill-opacity="0.2"/>
+</svg>

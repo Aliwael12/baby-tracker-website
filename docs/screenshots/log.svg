@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 720" font-family="Inter, Segoe UI, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff5f7"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+  </defs>
+  <rect width="360" height="720" rx="28" fill="url(#bg)"/>
+
+  <rect width="360" height="24" fill="#fff5f7"/>
+  <text x="16" y="17" fill="#ff3d72" font-size="11" font-weight="700">9:41</text>
+
+  <!-- header -->
+  <g transform="translate(16 40)">
+    <path d="M10 14 l-8 -8 l8 -8" stroke="#ff3d72" stroke-width="2.5" fill="none" stroke-linecap="round" transform="translate(0 8)"/>
+    <text x="22" y="20" fill="#0F172A" font-size="20" font-weight="800">Activity Log</text>
+    <text y="40" fill="#94A3B8" font-size="11">42 entries · last 7 days</text>
+  </g>
+
+  <!-- filter row -->
+  <g transform="translate(16 100)" font-size="10" font-weight="700">
+    <g><rect width="50" height="28" rx="14" fill="#ff3d72"/><text x="25" y="18" text-anchor="middle" fill="#ffffff">All</text></g>
+    <g transform="translate(58 0)"><rect width="50" height="28" rx="14" fill="#ffffff" stroke="#ffe0e8"/><text x="25" y="18" text-anchor="middle" fill="#0F172A">Feed</text></g>
+    <g transform="translate(116 0)"><rect width="56" height="28" rx="14" fill="#ffffff" stroke="#ffe0e8"/><text x="28" y="18" text-anchor="middle" fill="#0F172A">Pump</text></g>
+    <g transform="translate(180 0)"><rect width="54" height="28" rx="14" fill="#ffffff" stroke="#ffe0e8"/><text x="27" y="18" text-anchor="middle" fill="#0F172A">Sleep</text></g>
+    <g transform="translate(242 0)"><rect width="60" height="28" rx="14" fill="#ffffff" stroke="#ffe0e8"/><text x="30" y="18" text-anchor="middle" fill="#0F172A">Diaper</text></g>
+    <g transform="translate(310 0)"><rect width="34" height="28" rx="14" fill="#ffffff" stroke="#ffe0e8"/><text x="17" y="18" text-anchor="middle">🚿</text></g>
+  </g>
+
+  <!-- date header -->
+  <text x="20" y="158" fill="#94A3B8" font-size="10" font-weight="800" letter-spacing="1">TODAY · MAY 7</text>
+
+  <!-- entry: feed (running) -->
+  <g transform="translate(16 170)">
+    <rect width="328" height="68" rx="16" fill="#ffffff" stroke="#ffe0e8"/>
+    <g transform="translate(14 14)"><circle r="18" cx="18" cy="18" fill="#ffe0e8"/><text x="18" y="24" text-anchor="middle" font-size="16">🤱</text></g>
+    <text x="68" y="28" fill="#0F172A" font-size="12" font-weight="700">Feed · Right side</text>
+    <text x="68" y="44" fill="#94A3B8" font-size="10">09:14 → running · paused 2x</text>
+    <g transform="translate(68 50)">
+      <rect width="64" height="14" rx="7" fill="#ff3d72"/>
+      <circle cx="6" cy="7" r="3" fill="#ffffff"/>
+      <circle cx="6" cy="7" r="2" fill="#ff3d72" opacity="0.8">
+        <animate attributeName="opacity" values="0.4;1;0.4" dur="1.4s" repeatCount="indefinite"/>
+      </circle>
+      <text x="34" y="10" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="800">LIVE 12:38</text>
+    </g>
+    <text x="276" y="40" fill="#0F172A" font-size="11" font-weight="700" text-anchor="end" transform="translate(40 0)">by Mama</text>
+  </g>
+
+  <!-- entry: diaper -->
+  <g transform="translate(16 250)">
+    <rect width="328" height="56" rx="16" fill="#ffffff" stroke="#ffe0e8"/>
+    <g transform="translate(14 10)"><circle r="18" cx="18" cy="18" fill="#fff5f7"/><text x="18" y="24" text-anchor="middle" font-size="16">🩲</text></g>
+    <text x="68" y="24" fill="#0F172A" font-size="12" font-weight="700">Diaper · wet 💧</text>
+    <text x="68" y="40" fill="#94A3B8" font-size="10">08:42 · by Papa</text>
+    <text x="68" y="52" fill="#94A3B8" font-size="9" font-style="italic">"Tiny leak on the side"</text>
+  </g>
+
+  <!-- entry: sleep -->
+  <g transform="translate(16 318)">
+    <rect width="328" height="56" rx="16" fill="#ffffff" stroke="#ffe0e8"/>
+    <g transform="translate(14 10)"><circle r="18" cx="18" cy="18" fill="#fff5f7"/><text x="18" y="24" text-anchor="middle" font-size="16">😴</text></g>
+    <text x="68" y="24" fill="#0F172A" font-size="12" font-weight="700">Sleep · 1h 12m</text>
+    <text x="68" y="40" fill="#94A3B8" font-size="10">07:05 → 08:17 · paused once</text>
+    <g transform="translate(260 16)">
+      <rect width="56" height="22" rx="11" fill="#fff5f7"/>
+      <text x="28" y="15" text-anchor="middle" fill="#e02060" font-size="9" font-weight="800">EDIT</text>
+    </g>
+  </g>
+
+  <!-- entry: feed completed -->
+  <g transform="translate(16 386)">
+    <rect width="328" height="56" rx="16" fill="#ffffff" stroke="#ffe0e8"/>
+    <g transform="translate(14 10)"><circle r="18" cx="18" cy="18" fill="#ffe0e8"/><text x="18" y="24" text-anchor="middle" font-size="16">🤱</text></g>
+    <text x="68" y="24" fill="#0F172A" font-size="12" font-weight="700">Feed · Left side · 18 min</text>
+    <text x="68" y="40" fill="#94A3B8" font-size="10">06:45 → 07:03 · by Mama</text>
+  </g>
+
+  <text x="20" y="478" fill="#94A3B8" font-size="10" font-weight="800" letter-spacing="1">YESTERDAY · MAY 6</text>
+
+  <!-- entry: pump -->
+  <g transform="translate(16 490)">
+    <rect width="328" height="56" rx="16" fill="#ffffff" stroke="#ffe0e8"/>
+    <g transform="translate(14 10)"><circle r="18" cx="18" cy="18" fill="#fff5f7"/><text x="18" y="24" text-anchor="middle" font-size="16">🍼</text></g>
+    <text x="68" y="24" fill="#0F172A" font-size="12" font-weight="700">Pump · Both sides</text>
+    <text x="68" y="40" fill="#94A3B8" font-size="10">22:14 · by Mama</text>
+  </g>
+
+  <!-- entry: shower -->
+  <g transform="translate(16 558)">
+    <rect width="328" height="56" rx="16" fill="#ffffff" stroke="#ffe0e8"/>
+    <g transform="translate(14 10)"><circle r="18" cx="18" cy="18" fill="#fff5f7"/><text x="18" y="24" text-anchor="middle" font-size="16">🚿</text></g>
+    <text x="68" y="24" fill="#0F172A" font-size="12" font-weight="700">Shower</text>
+    <text x="68" y="40" fill="#94A3B8" font-size="10">19:30 · by Papa · "He laughed today!"</text>
+  </g>
+
+  <!-- entry: diaper poo -->
+  <g transform="translate(16 626)">
+    <rect width="328" height="56" rx="16" fill="#ffffff" stroke="#ffe0e8"/>
+    <g transform="translate(14 10)"><circle r="18" cx="18" cy="18" fill="#fff5f7"/><text x="18" y="24" text-anchor="middle" font-size="16">🩲</text></g>
+    <text x="68" y="24" fill="#0F172A" font-size="12" font-weight="700">Diaper · soiled 💩</text>
+    <text x="68" y="40" fill="#94A3B8" font-size="10">17:55 · by Mama</text>
+  </g>
+
+  <!-- swipe hint -->
+  <g transform="translate(280 642)">
+    <rect width="56" height="24" rx="12" fill="#ff3d72"/>
+    <text x="28" y="16" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="800">DELETE</text>
+  </g>
+</svg>
