@@ -8,6 +8,8 @@ interface ActivityTimerCardProps {
   type: ActivityType;
   userName: string;
   onLogSaved: () => void;
+  /** Render the resting card as a compact square (for the home-screen grid). */
+  square?: boolean;
 }
 
 const ACTIVITY_CONFIG: Record<
@@ -72,6 +74,7 @@ export default function ActivityTimerCard({
   type,
   userName,
   onLogSaved,
+  square = false,
 }: ActivityTimerCardProps) {
   const config = ACTIVITY_CONFIG[type];
 
@@ -365,6 +368,14 @@ export default function ActivityTimerCard({
 
   const isActive = !!startTime && !showComment && !showDiaperStatus;
 
+  // In square (grid) mode the resting trigger fills a square cell; transient
+  // states (diaper status / note form) break out to full width to stay usable.
+  const restingBtnSizing = square ? "aspect-square flex-col" : "py-4";
+  const restingIconClass = square ? "text-3xl" : "text-2xl";
+  const expandedCardClass =
+    "animate-slide-up rounded-2xl bg-white p-4 shadow-md" +
+    (square ? " col-span-2" : "");
+
   const DIAPER_OPTIONS = [
     { value: "empty", icon: "✅", label: "Empty" },
     { value: "wet", icon: "💧", label: "Wet" },
@@ -374,7 +385,7 @@ export default function ActivityTimerCard({
 
   if (showDiaperStatus) {
     return (
-      <div className="animate-slide-up rounded-2xl bg-white p-4 shadow-md">
+      <div className={expandedCardClass}>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-lg font-semibold text-gray-700">
             {config.icon} {config.label}
@@ -405,7 +416,7 @@ export default function ActivityTimerCard({
 
   if (showComment) {
     return (
-      <div className="animate-slide-up rounded-2xl bg-white p-4 shadow-md">
+      <div className={expandedCardClass}>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-lg font-semibold text-gray-700">
             {config.icon} {config.label}
@@ -477,13 +488,13 @@ export default function ActivityTimerCard({
     }
 
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-md">
+      <div className="flex rounded-2xl bg-white p-4 shadow-md">
         <button
           onClick={() => handleInstantLog()}
           disabled={saving}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 transition-all active:scale-[0.95] disabled:opacity-60"
+          className={`flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 ${restingBtnSizing} transition-all active:scale-[0.95] disabled:opacity-60`}
         >
-          <span className="text-2xl">{config.icon}</span>
+          <span className={restingIconClass}>{config.icon}</span>
           <span className="font-semibold text-baby-600">
             {saving && (type === "shower" || type === "vitamin") ? "Saving..." : config.label}
           </span>
@@ -552,44 +563,44 @@ export default function ActivityTimerCard({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-md">
-      {isActive && (
-        <div className="mb-2 text-center">
-          <span className={`inline-block rounded-full px-4 py-1 text-sm font-bold text-white ${paused ? "bg-amber-400" : "animate-pulse-soft bg-baby-400"}`}>
-            {formatTimer(elapsed)} {paused ? "(paused)" : ""}
-          </span>
-        </div>
-      )}
+    <div className={isActive && square ? expandedCardClass : "flex rounded-2xl bg-white p-4 shadow-md"}>
       {isActive ? (
-        <div className="flex gap-2">
-          {paused ? (
+        <div className="w-full">
+          <div className="mb-2 text-center">
+            <span className={`inline-block rounded-full px-4 py-1 text-sm font-bold text-white ${paused ? "bg-amber-400" : "animate-pulse-soft bg-baby-400"}`}>
+              {formatTimer(elapsed)} {paused ? "(paused)" : ""}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {paused ? (
+              <button
+                onClick={handleResume}
+                className="flex-1 rounded-xl border-2 border-green-300 bg-green-50 py-3 text-center text-sm font-semibold text-green-600 transition-all active:scale-[0.95]"
+              >
+                ▶ Resume
+              </button>
+            ) : (
+              <button
+                onClick={handlePause}
+                className="flex-1 rounded-xl border-2 border-amber-300 bg-amber-50 py-3 text-center text-sm font-semibold text-amber-600 transition-all active:scale-[0.95]"
+              >
+                ⏸ Pause
+              </button>
+            )}
             <button
-              onClick={handleResume}
-              className="flex-1 rounded-xl border-2 border-green-300 bg-green-50 py-3 text-center text-sm font-semibold text-green-600 transition-all active:scale-[0.95]"
+              onClick={handleStop}
+              className="flex-1 rounded-xl border-2 border-red-300 bg-red-50 py-3 text-center text-sm font-semibold text-red-600 transition-all active:scale-[0.95]"
             >
-              ▶ Resume
+              ⏹ Stop
             </button>
-          ) : (
-            <button
-              onClick={handlePause}
-              className="flex-1 rounded-xl border-2 border-amber-300 bg-amber-50 py-3 text-center text-sm font-semibold text-amber-600 transition-all active:scale-[0.95]"
-            >
-              ⏸ Pause
-            </button>
-          )}
-          <button
-            onClick={handleStop}
-            className="flex-1 rounded-xl border-2 border-red-300 bg-red-50 py-3 text-center text-sm font-semibold text-red-600 transition-all active:scale-[0.95]"
-          >
-            ⏹ Stop
-          </button>
+          </div>
         </div>
       ) : (
         <button
           onClick={() => handleStart()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 transition-all active:scale-[0.95]"
+          className={`flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 ${restingBtnSizing} transition-all active:scale-[0.95]`}
         >
-          <span className="text-2xl">{config.icon}</span>
+          <span className={restingIconClass}>{config.icon}</span>
           <span className="font-semibold text-baby-600">{config.label}</span>
         </button>
       )}

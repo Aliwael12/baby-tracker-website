@@ -10,7 +10,10 @@ import PageHeader from "@/components/PageHeader";
 import LastFeedBanner from "@/components/LastFeedBanner";
 import { useUserName } from "@/lib/useUserName";
 
-const AFTER_FEED: ActivityType[] = ["pump", "sleep", "diaper", "shower", "vitamin"];
+// Pump keeps its full-width card (L/R selection); the rest are compact
+// squares in a 2-column grid to cut down on scrolling.
+const FULL_WIDTH: ActivityType[] = ["pump"];
+const SQUARE_GRID: ActivityType[] = ["sleep", "diaper", "shower", "vitamin"];
 
 export default function Home() {
   const [userName, setUserName] = useUserName();
@@ -129,7 +132,7 @@ export default function Home() {
           userName={userName}
           onLogSaved={fetchLogs}
         />
-        {AFTER_FEED.map((type) => (
+        {FULL_WIDTH.map((type) => (
           <ActivityTimerCard
             key={type}
             type={type}
@@ -137,6 +140,17 @@ export default function Home() {
             onLogSaved={fetchLogs}
           />
         ))}
+        <div className="grid grid-cols-2 items-start gap-3">
+          {SQUARE_GRID.map((type) => (
+            <ActivityTimerCard
+              key={type}
+              type={type}
+              userName={userName}
+              onLogSaved={fetchLogs}
+              square
+            />
+          ))}
+        </div>
       </section>
 
       {showManualEntry && (
