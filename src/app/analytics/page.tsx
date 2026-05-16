@@ -297,12 +297,21 @@ export default function AnalyticsPage() {
           </h2>
 
           <div className="mb-3 flex items-center justify-center gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="rounded-xl border border-baby-100 bg-white px-3 py-1.5 text-xs text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-baby-200"
-            />
+            <div className="relative">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className={`rounded-xl border border-baby-100 bg-white px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-baby-200 ${
+                  selectedDate ? "text-gray-700" : "text-transparent"
+                }`}
+              />
+              {!selectedDate && (
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-xs font-semibold text-baby-600">
+                  All dates
+                </span>
+              )}
+            </div>
             {selectedDate && (
               <button
                 onClick={() => setSelectedDate("")}
