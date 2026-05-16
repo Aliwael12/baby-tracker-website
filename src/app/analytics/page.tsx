@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import PageHeader from "@/components/PageHeader";
 
 interface LogEntry {
@@ -179,7 +179,6 @@ export default function AnalyticsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("");
-  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -306,27 +305,18 @@ export default function AnalyticsPage() {
           </h2>
 
           <div className="mb-3 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                const el = dateInputRef.current;
-                if (!el) return;
-                if (el.showPicker) el.showPicker();
-                else el.focus();
-              }}
-              className="rounded-xl border border-baby-100 bg-white px-3 py-1.5 text-xs font-semibold text-baby-600 shadow-sm transition-all active:scale-[0.95]"
-            >
-              📅 {selectedDate ? formatPickedDate(selectedDate) : "All dates"}
-            </button>
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden
-            />
+            <div className="relative">
+              <div className="rounded-xl border border-baby-100 bg-white px-3 py-1.5 text-xs font-semibold text-baby-600 shadow-sm">
+                📅 {selectedDate ? formatPickedDate(selectedDate) : "All dates"}
+              </div>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                aria-label="Filter by date"
+              />
+            </div>
             {selectedDate && (
               <button
                 onClick={() => setSelectedDate("")}
