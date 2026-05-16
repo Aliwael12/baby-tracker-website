@@ -1,12 +1,21 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
+import { useNow } from "@/lib/useNow";
 
 interface LogEntry {
   type: string;
   startTime: string;
   side?: string | null;
+  diaperStatus?: string | null;
 }
+
+const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
+  empty: { icon: "✅", label: "Empty" },
+  wet: { icon: "💧", label: "Wet" },
+  dirty: { icon: "💩", label: "Dirty" },
+  wet_and_dirty: { icon: "💧💩", label: "Wet & Dirty" },
+};
 
 function sideToLetter(side: string | null | undefined): "L" | "R" | null {
   if (side === "left") return "L";
@@ -29,12 +38,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function LastFeedBanner({ logs }: LastFeedBannerProps) {
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useNow();
 
   const lastFeed = useMemo(() => {
     const feeds = logs.filter((l) => l.type === "feed");
@@ -52,11 +56,25 @@ export default function LastFeedBanner({ logs }: LastFeedBannerProps) {
     );
   }, [logs]);
 
-  if (!lastFeed && !lastDiaper) return null;
+  const lastVitamin = useMemo(() => {
+    const vitamins = logs.filter((l) => l.type === "vitamin");
+    if (vitamins.length === 0) return null;
+    return vitamins.reduce((latest, l) =>
+      new Date(l.startTime).getTime() > new Date(latest.startTime).getTime() ? l : latest
+    );
+  }, [logs]);
+
+  // now === 0 before the client clock mounts; avoid rendering stale elapsed.
+  if (now === 0 || (!lastFeed && !lastDiaper && !lastVitamin)) return null;
 
   const feedSide = lastFeed ? sideToLetter(lastFeed.side) : null;
   const feedElapsed = lastFeed ? now - new Date(lastFeed.startTime).getTime() : 0;
   const diaperElapsed = lastDiaper ? now - new Date(lastDiaper.startTime).getTime() : 0;
+  const vitaminElapsed = lastVitamin ? now - new Date(lastVitamin.startTime).getTime() : 0;
+  const diaperStatusMeta =
+    lastDiaper && lastDiaper.diaperStatus
+      ? DIAPER_STATUS_META[lastDiaper.diaperStatus] ?? null
+      : null;
 
   return (
     <div className="mb-4 space-y-2">
@@ -79,6 +97,22 @@ export default function LastFeedBanner({ logs }: LastFeedBannerProps) {
           <span className="text-sm text-gray-600">
             🩲 Last diaper change was:{" "}
             <span className="font-bold text-baby-600">{formatElapsed(diaperElapsed)}</span>
+            {diaperStatusMeta && (
+              <>
+                {" "}
+                <span className="font-bold text-baby-600">
+                  ({diaperStatusMeta.icon} {diaperStatusMeta.label})
+                </span>
+              </>
+            )}
+          </span>
+        </div>
+      )}
+      {lastVitamin && (
+        <div className="rounded-2xl bg-gradient-to-r from-emerald-50/90 to-baby-50 p-3 text-center shadow-sm">
+          <span className="text-sm text-gray-600">
+            💊 Last vitamin was:{" "}
+            <span className="font-bold text-baby-600">{formatElapsed(vitaminElapsed)}</span>
           </span>
         </div>
       )}

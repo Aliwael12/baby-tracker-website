@@ -43,6 +43,7 @@ export default function DailyStats({ logs }: DailyStatsProps) {
       sleepTime: totalTime("sleep"),
       diaperCount: count("diaper"),
       showerCount: count("shower"),
+      vitaminCount: count("vitamin"),
     };
   }, [logs]);
 
@@ -52,6 +53,7 @@ export default function DailyStats({ logs }: DailyStatsProps) {
     { icon: "😴", label: "Sleep", value: formatMinutes(stats.sleepTime), sub: "total today" },
     { icon: "🩲", label: "Diapers", value: String(stats.diaperCount), sub: "changed today" },
     { icon: "🚿", label: "Showers", value: String(stats.showerCount), sub: "taken today" },
+    { icon: "💊", label: "Vitamins", value: String(stats.vitaminCount), sub: "given today" },
   ];
 
   return (

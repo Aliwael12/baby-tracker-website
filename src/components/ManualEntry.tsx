@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type ActivityType = "pump" | "feed" | "sleep" | "diaper" | "shower";
+type ActivityType = "pump" | "feed" | "sleep" | "diaper" | "shower" | "vitamin";
 
 interface ManualEntryProps {
   userName: string;
@@ -16,6 +16,7 @@ const ACTIVITY_OPTIONS: { value: ActivityType; icon: string; label: string }[] =
   { value: "sleep", icon: "😴", label: "Sleep" },
   { value: "diaper", icon: "🩲", label: "Diaper" },
   { value: "shower", icon: "🚿", label: "Shower" },
+  { value: "vitamin", icon: "💊", label: "Vitamin" },
 ];
 
 const DIAPER_OPTIONS = [

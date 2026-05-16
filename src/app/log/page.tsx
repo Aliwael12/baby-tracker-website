@@ -4,19 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import NamePrompt from "@/components/NamePrompt";
 import LogsList from "@/components/LogsList";
 import PageHeader from "@/components/PageHeader";
+import { useUserName } from "@/lib/useUserName";
 
 export default function ActivityLogPage() {
-  const [userName, setUserName] = useState<string | null>(null);
-  const [nameLoaded, setNameLoaded] = useState(false);
+  const [userName, setUserName] = useUserName();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [logs, setLogs] = useState<any[]>([]);
   const [showEditName, setShowEditName] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("babytracker_username");
-    if (stored) setUserName(stored);
-    setNameLoaded(true);
-  }, []);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -28,6 +22,10 @@ export default function ActivityLogPage() {
   }, []);
 
   useEffect(() => {
+    // Polling the server is a legitimate external-system sync; the state
+    // update happens asynchronously after the fetch resolves, not as a
+    // synchronous cascading render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchLogs();
     const id = setInterval(fetchLogs, 15000);
     return () => clearInterval(id);
@@ -45,7 +43,7 @@ export default function ActivityLogPage() {
     [fetchLogs]
   );
 
-  if (!nameLoaded || !userName || showEditName) {
+  if (!userName || showEditName) {
     return <NamePrompt onNameSet={(name) => { setUserName(name); setShowEditName(false); }} />;
   }
 

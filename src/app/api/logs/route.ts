@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const validTypes = ["pump", "feed", "sleep", "diaper", "shower", "growth"];
+  const validTypes = ["pump", "feed", "sleep", "diaper", "shower", "vitamin", "growth"];
   if (!validTypes.includes(type)) {
     return NextResponse.json({ error: "Invalid activity type" }, { status: 400 });
   }

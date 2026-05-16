@@ -87,6 +87,7 @@ interface DayStats {
   sleepCount: number;
   diaperCount: number;
   showerCount: number;
+  vitaminCount: number;
   totalLogs: number;
   diaperLogs: LogEntry[];
   feedLogs: LogEntry[];
@@ -122,6 +123,7 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
       sleepCount: count("sleep"),
       diaperCount: count("diaper"),
       showerCount: count("shower"),
+      vitaminCount: count("vitamin"),
       totalLogs: dayLogs.length,
       diaperLogs: dayLogs.filter((l) => l.type === "diaper").sort(byTime),
       feedLogs: dayLogs.filter((l) => l.type === "feed").sort(byTime),
@@ -208,6 +210,7 @@ export default function AnalyticsPage() {
       sleepCount: 0,
       diaperCount: 0,
       showerCount: 0,
+      vitaminCount: 0,
       totalLogs: 0,
     };
 
@@ -223,6 +226,7 @@ export default function AnalyticsPage() {
         sleepTime: sum((d) => d.sleepTime) / dayCount,
         diaperCount: sum((d) => d.diaperCount) / dayCount,
         showerCount: sum((d) => d.showerCount) / dayCount,
+        vitaminCount: sum((d) => d.vitaminCount) / dayCount,
       },
       totalStats: {
         feedTime: sum((d) => d.feedTime),
@@ -233,6 +237,7 @@ export default function AnalyticsPage() {
         sleepCount: sum((d) => d.sleepCount),
         diaperCount: sum((d) => d.diaperCount),
         showerCount: sum((d) => d.showerCount),
+        vitaminCount: sum((d) => d.vitaminCount),
         totalLogs: sum((d) => d.totalLogs),
       },
     };
@@ -295,6 +300,13 @@ export default function AnalyticsPage() {
           avg={avgStats.showerCount.toFixed(1)}
           total={String(totalStats.showerCount)}
         />
+        <StatCard
+          icon="💊"
+          label="Vitamins"
+          today={String(todayStats.vitaminCount)}
+          avg={avgStats.vitaminCount.toFixed(1)}
+          total={String(totalStats.vitaminCount)}
+        />
       </div>
 
       {/* Daily breakdown table */}
@@ -349,6 +361,7 @@ export default function AnalyticsPage() {
                 { icon: "😴", value: formatMinutes(day.sleepTime), show: day.sleepTime > 0 },
                 { icon: "🩲", value: `${day.diaperCount}×`, show: day.diaperCount > 0 },
                 { icon: "🚿", value: `${day.showerCount}×`, show: day.showerCount > 0 },
+                { icon: "💊", value: `${day.vitaminCount}×`, show: day.vitaminCount > 0 },
               ].filter((c) => c.show);
 
               return (

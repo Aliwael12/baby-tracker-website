@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import PauseTimelineIndicator from "@/components/PauseTimelineIndicator";
 import { SwipeableRow, DeleteConfirm } from "@/components/SwipeableLogRow";
 
@@ -32,6 +32,7 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   sleep: { icon: "😴", label: "Sleep" },
   diaper: { icon: "🩲", label: "Diaper" },
   shower: { icon: "🚿", label: "Shower" },
+  vitamin: { icon: "💊", label: "Vitamin" },
   growth: { icon: "📏", label: "Growth" },
 };
 
@@ -49,6 +50,7 @@ const FILTER_OPTIONS = [
   { value: "sleep", icon: "😴", label: "Sleep" },
   { value: "diaper", icon: "🩲", label: "Diaper" },
   { value: "shower", icon: "🚿", label: "Shower" },
+  { value: "vitamin", icon: "💊", label: "Vitamin" },
 ] as const;
 
 function formatDuration(minutes: number | null): string {
@@ -109,6 +111,22 @@ function computeGaps(logs: LogEntry[]): Map<number, number | null> {
   return gaps;
 }
 
+// Ids of the logs that should render a date separator (the first log of each
+// date, in display order). Computed in a pure helper so render does not mutate
+// a component-scoped variable.
+function computeDateHeaderIds(logs: LogEntry[]): Set<number> {
+  const ids = new Set<number>();
+  let prev = "";
+  for (const log of logs) {
+    const label = formatDate(log.startTime);
+    if (label !== prev) {
+      ids.add(log.id);
+      prev = label;
+    }
+  }
+  return ids;
+}
+
 function toLocalTimeStr(d: Date): string {
   const pad = (n: number) => n.toString().padStart(2, "0");
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -119,46 +137,248 @@ function toLocalDateStr(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+function EditLogModal({
+  log,
+  onClose,
+  onSaved,
+}: {
+  log: LogEntry;
+  onClose: () => void;
+  onSaved?: () => void | Promise<void>;
+}) {
+  // Initialized from the log prop (component is keyed by log.id, so it
+  // remounts per log) — no effect needed to sync derived state.
+  const [editComments, setEditComments] = useState(log.comments ?? "");
+  const [editDiaperStatus, setEditDiaperStatus] = useState<string | null>(
+    log.diaperStatus ?? null
+  );
+  const [editDateStr, setEditDateStr] = useState(() =>
+    toLocalDateStr(new Date(log.startTime))
+  );
+  const [editStartTimeStr, setEditStartTimeStr] = useState(() =>
+    toLocalTimeStr(new Date(log.startTime))
+  );
+  const [editEndTimeStr, setEditEndTimeStr] = useState(() =>
+    log.endTime ? toLocalTimeStr(new Date(log.endTime)) : ""
+  );
+  const [editWeightStr, setEditWeightStr] = useState(() =>
+    log.type === "growth" && log.weightKg !== null && log.weightKg !== undefined
+      ? String(log.weightKg)
+      : ""
+  );
+  const [editHeightStr, setEditHeightStr] = useState(() =>
+    log.type === "growth" && log.heightCm !== null && log.heightCm !== undefined
+      ? String(log.heightCm)
+      : ""
+  );
+
+  const handleSaveEdit = async () => {
+    const payload: Record<string, unknown> = {
+      comments: editComments.trim() ? editComments.trim() : null,
+    };
+
+    if (log.type === "diaper") {
+      payload.diaperStatus = editDiaperStatus;
+    }
+
+    if (log.type === "growth") {
+      const w = editWeightStr.trim() ? parseFloat(editWeightStr) : null;
+      const h = editHeightStr.trim() ? parseFloat(editHeightStr) : null;
+      if (w == null && h == null) return;
+      payload.weightKg = w;
+      payload.heightCm = h;
+    }
+
+    if (editDateStr && editStartTimeStr) {
+      const newStart = new Date(`${editDateStr}T${editStartTimeStr}`);
+      payload.startTime = newStart.toISOString();
+
+      if (log.type === "diaper" || log.type === "growth") {
+        payload.endTime = newStart.toISOString();
+      } else if (editEndTimeStr) {
+        const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
+        payload.endTime = newEnd.toISOString();
+      } else {
+        payload.endTime = null;
+      }
+    }
+
+    try {
+      const res = await fetch(`/api/logs/${log.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        await onSaved?.();
+        onClose();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+      <div className="w-full max-w-xs animate-slide-up rounded-2xl bg-white p-5 shadow-xl">
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-center text-base font-semibold text-gray-800">
+              Edit log
+            </p>
+            <p className="mt-1 text-center text-xs text-gray-400">
+              {TYPE_META[log.type]?.icon} {TYPE_META[log.type]?.label}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-xs text-gray-400"
+            aria-label="Close edit"
+          >
+            Close
+          </button>
+        </div>
+
+        <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          Date
+        </label>
+        <input
+          type="date"
+          value={editDateStr}
+          onChange={(e) => setEditDateStr(e.target.value)}
+          className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+        />
+
+        {log.type === "diaper" || log.type === "growth" ? (
+          <>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Time
+            </label>
+            <input
+              type="time"
+              value={editStartTimeStr}
+              onChange={(e) => {
+                setEditStartTimeStr(e.target.value);
+                setEditEndTimeStr(e.target.value);
+              }}
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+            />
+          </>
+        ) : (
+          <div className="mb-3 flex gap-3">
+            <div className="flex-1">
+              <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Start Time
+              </label>
+              <input
+                type="time"
+                value={editStartTimeStr}
+                onChange={(e) => setEditStartTimeStr(e.target.value)}
+                className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                End Time
+              </label>
+              <input
+                type="time"
+                value={editEndTimeStr}
+                onChange={(e) => setEditEndTimeStr(e.target.value)}
+                className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
+              />
+            </div>
+          </div>
+        )}
+
+        {log.type === "growth" && (
+          <>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Weight (kg)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={editWeightStr}
+              onChange={(e) => setEditWeightStr(e.target.value)}
+              placeholder="e.g. 4.5"
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Height (cm)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              value={editHeightStr}
+              onChange={(e) => setEditHeightStr(e.target.value)}
+              placeholder="e.g. 52"
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+          </>
+        )}
+
+        <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          Notes
+        </label>
+        <input
+          type="text"
+          value={editComments}
+          onChange={(e) => setEditComments(e.target.value)}
+          placeholder="Optional"
+          className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+        />
+
+        {log.type === "diaper" && (
+          <>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Status
+            </label>
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              {Object.entries(DIAPER_STATUS_META).map(([value, meta]) => (
+                <button
+                  key={value}
+                  onClick={() => setEditDiaperStatus(value)}
+                  className={`flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-semibold transition-all ${
+                    editDiaperStatus === value
+                      ? "bg-baby-400 text-white shadow-sm"
+                      : "border-2 border-baby-200 bg-baby-50 text-baby-600"
+                  }`}
+                >
+                  <span className="text-base">{meta.icon}</span>
+                  {meta.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-500 transition-all active:scale-[0.97]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSaveEdit}
+            className="flex-1 rounded-xl bg-baby-400 py-2.5 text-sm font-semibold text-white shadow transition-all active:scale-[0.97]"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
   const [filter, setFilter] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const [editLog, setEditLog] = useState<LogEntry | null>(null);
-  const [editComments, setEditComments] = useState("");
-  const [editDiaperStatus, setEditDiaperStatus] = useState<string | null>(null);
-  const [editDateStr, setEditDateStr] = useState("");
-  const [editStartTimeStr, setEditStartTimeStr] = useState("");
-  const [editEndTimeStr, setEditEndTimeStr] = useState("");
-  const [editWeightStr, setEditWeightStr] = useState("");
-  const [editHeightStr, setEditHeightStr] = useState("");
-
-  useEffect(() => {
-    if (!editLog) return;
-    setEditComments(editLog.comments ?? "");
-    setEditDiaperStatus(editLog.diaperStatus ?? null);
-    const start = new Date(editLog.startTime);
-    setEditDateStr(toLocalDateStr(start));
-    setEditStartTimeStr(toLocalTimeStr(start));
-    if (editLog.endTime) {
-      setEditEndTimeStr(toLocalTimeStr(new Date(editLog.endTime)));
-    } else {
-      setEditEndTimeStr("");
-    }
-    if (editLog.type === "growth") {
-      setEditWeightStr(
-        editLog.weightKg !== null && editLog.weightKg !== undefined
-          ? String(editLog.weightKg)
-          : ""
-      );
-      setEditHeightStr(
-        editLog.heightCm !== null && editLog.heightCm !== undefined
-          ? String(editLog.heightCm)
-          : ""
-      );
-    } else {
-      setEditWeightStr("");
-      setEditHeightStr("");
-    }
-  }, [editLog]);
 
   if (logs.length === 0) {
     return (
@@ -171,60 +391,10 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
 
   const filteredLogs = filter ? logs.filter((l) => l.type === filter) : logs;
   const gaps = computeGaps(logs);
-
-  let lastDate = "";
+  const dateHeaderIds = computeDateHeaderIds(filteredLogs);
 
   const beginEdit = (log: LogEntry) => {
     setEditLog(log);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editLog) return;
-
-    const payload: Record<string, unknown> = {
-      comments: editComments.trim() ? editComments.trim() : null,
-    };
-
-    if (editLog.type === "diaper") {
-      payload.diaperStatus = editDiaperStatus;
-    }
-
-    if (editLog.type === "growth") {
-      const w = editWeightStr.trim() ? parseFloat(editWeightStr) : null;
-      const h = editHeightStr.trim() ? parseFloat(editHeightStr) : null;
-      if (w == null && h == null) return;
-      payload.weightKg = w;
-      payload.heightCm = h;
-    }
-
-    if (editDateStr && editStartTimeStr) {
-      const newStart = new Date(`${editDateStr}T${editStartTimeStr}`);
-      payload.startTime = newStart.toISOString();
-
-      if (editLog.type === "diaper" || editLog.type === "growth") {
-        payload.endTime = newStart.toISOString();
-      } else if (editEndTimeStr) {
-        const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
-        payload.endTime = newEnd.toISOString();
-      } else {
-        payload.endTime = null;
-      }
-    }
-
-    try {
-      const res = await fetch(`/api/logs/${editLog.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        onEdit?.();
-        setEditLog(null);
-      }
-    } catch {
-      // ignore
-    }
   };
 
   return (
@@ -248,8 +418,7 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
       {filteredLogs.map((log) => {
         const meta = TYPE_META[log.type] || { icon: "❓", label: log.type };
         const dateLabel = formatDate(log.startTime);
-        const showDateHeader = dateLabel !== lastDate;
-        lastDate = dateLabel;
+        const showDateHeader = dateHeaderIds.has(log.id);
         const gap = gaps.get(log.id);
         const showGap =
           gap !== null &&
@@ -362,158 +531,12 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
       )}
 
       {editLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-          <div className="w-full max-w-xs animate-slide-up rounded-2xl bg-white p-5 shadow-xl">
-            <div className="mb-2 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-center text-base font-semibold text-gray-800">
-                  Edit log
-                </p>
-                <p className="mt-1 text-center text-xs text-gray-400">
-                  {TYPE_META[editLog.type]?.icon} {TYPE_META[editLog.type]?.label}
-                </p>
-              </div>
-              <button
-                onClick={() => setEditLog(null)}
-                className="text-xs text-gray-400"
-                aria-label="Close edit"
-              >
-                Close
-              </button>
-            </div>
-
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Date
-            </label>
-            <input
-              type="date"
-              value={editDateStr}
-              onChange={(e) => setEditDateStr(e.target.value)}
-              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
-            />
-
-            {editLog.type === "diaper" || editLog.type === "growth" ? (
-              <>
-                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Time
-                </label>
-                <input
-                  type="time"
-                  value={editStartTimeStr}
-                  onChange={(e) => {
-                    setEditStartTimeStr(e.target.value);
-                    setEditEndTimeStr(e.target.value);
-                  }}
-                  className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
-                />
-              </>
-            ) : (
-              <div className="mb-3 flex gap-3">
-                <div className="flex-1">
-                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    value={editStartTimeStr}
-                    onChange={(e) => setEditStartTimeStr(e.target.value)}
-                    className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    value={editEndTimeStr}
-                    onChange={(e) => setEditEndTimeStr(e.target.value)}
-                    className="w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
-                  />
-                </div>
-              </div>
-            )}
-
-            {editLog.type === "growth" && (
-              <>
-                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Weight (kg)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={editWeightStr}
-                  onChange={(e) => setEditWeightStr(e.target.value)}
-                  placeholder="e.g. 4.5"
-                  className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
-                />
-                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Height (cm)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={editHeightStr}
-                  onChange={(e) => setEditHeightStr(e.target.value)}
-                  placeholder="e.g. 52"
-                  className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
-                />
-              </>
-            )}
-
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Notes
-            </label>
-            <input
-              type="text"
-              value={editComments}
-              onChange={(e) => setEditComments(e.target.value)}
-              placeholder="Optional"
-              className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
-            />
-
-            {editLog.type === "diaper" && (
-              <>
-                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Status
-                </label>
-                <div className="mb-4 grid grid-cols-2 gap-2">
-                  {Object.entries(DIAPER_STATUS_META).map(([value, meta]) => (
-                    <button
-                      key={value}
-                      onClick={() => setEditDiaperStatus(value)}
-                      className={`flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-semibold transition-all ${
-                        editDiaperStatus === value
-                          ? "bg-baby-400 text-white shadow-sm"
-                          : "border-2 border-baby-200 bg-baby-50 text-baby-600"
-                      }`}
-                    >
-                      <span className="text-base">{meta.icon}</span>
-                      {meta.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setEditLog(null)}
-                className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-500 transition-all active:scale-[0.97]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className="flex-1 rounded-xl bg-baby-400 py-2.5 text-sm font-semibold text-white shadow transition-all active:scale-[0.97]"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditLogModal
+          key={editLog.id}
+          log={editLog}
+          onClose={() => setEditLog(null)}
+          onSaved={onEdit}
+        />
       )}
     </div>
   );

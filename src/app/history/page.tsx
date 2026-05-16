@@ -23,6 +23,7 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   sleep: { icon: "😴", label: "Sleep" },
   diaper: { icon: "🩲", label: "Diaper" },
   shower: { icon: "🚿", label: "Shower" },
+  vitamin: { icon: "💊", label: "Vitamin" },
 };
 
 const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
@@ -86,6 +87,7 @@ interface DayGroup {
     sleepTime: number;
     diaperCount: number;
     showerCount: number;
+    vitaminCount: number;
   };
 }
 
@@ -116,6 +118,7 @@ function groupByDay(logs: LogEntry[]): DayGroup[] {
         sleepTime: totalTime("sleep"),
         diaperCount: count("diaper"),
         showerCount: count("shower"),
+        vitaminCount: count("vitamin"),
       },
     });
   }
@@ -130,6 +133,7 @@ function DayStatsBar({ stats }: { stats: DayGroup["stats"] }) {
     { icon: "😴", value: formatMinutes(stats.sleepTime), show: stats.sleepTime > 0 },
     { icon: "🩲", value: `${stats.diaperCount}×`, show: stats.diaperCount > 0 },
     { icon: "🚿", value: `${stats.showerCount}×`, show: stats.showerCount > 0 },
+    { icon: "💊", value: `${stats.vitaminCount}×`, show: stats.vitaminCount > 0 },
   ].filter((i) => i.show);
 
   if (items.length === 0) return null;
