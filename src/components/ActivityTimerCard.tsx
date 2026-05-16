@@ -370,8 +370,11 @@ export default function ActivityTimerCard({
 
   // In square (grid) mode the resting trigger fills a square cell; transient
   // states (diaper status / note form) break out to full width to stay usable.
-  const restingBtnSizing = square ? "aspect-square flex-col" : "py-4";
-  const restingIconClass = square ? "text-3xl" : "text-2xl";
+  const restingBtnSizing = square ? "aspect-[4/3] flex-col" : "py-4";
+  const restingIconClass = "text-2xl";
+  const restingCardClass = `flex rounded-2xl bg-white shadow-md ${
+    square ? "p-3" : "p-4"
+  }`;
   const expandedCardClass =
     "animate-slide-up rounded-2xl bg-white p-4 shadow-md" +
     (square ? " col-span-2" : "");
@@ -488,7 +491,7 @@ export default function ActivityTimerCard({
     }
 
     return (
-      <div className="flex rounded-2xl bg-white p-4 shadow-md">
+      <div className={restingCardClass}>
         <button
           onClick={() => handleInstantLog()}
           disabled={saving}
@@ -544,17 +547,17 @@ export default function ActivityTimerCard({
           <div className="flex gap-3">
             <button
               onClick={() => handleStart("left")}
-              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 text-center transition-all active:scale-[0.95]"
+              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
             >
-              <span className="block text-2xl">🫲</span>
-              <span className="mt-1 block text-xs font-semibold text-baby-600">L</span>
+              <span className="block text-xl">🫲</span>
+              <span className="mt-0.5 block text-xs font-semibold text-baby-600">L</span>
             </button>
             <button
               onClick={() => handleStart("right")}
-              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-4 text-center transition-all active:scale-[0.95]"
+              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
             >
-              <span className="block text-2xl">🫱</span>
-              <span className="mt-1 block text-xs font-semibold text-baby-600">R</span>
+              <span className="block text-xl">🫱</span>
+              <span className="mt-0.5 block text-xs font-semibold text-baby-600">R</span>
             </button>
           </div>
         )}
@@ -563,7 +566,7 @@ export default function ActivityTimerCard({
   }
 
   return (
-    <div className={isActive && square ? expandedCardClass : "flex rounded-2xl bg-white p-4 shadow-md"}>
+    <div className={isActive && square ? expandedCardClass : restingCardClass}>
       {isActive ? (
         <div className="w-full">
           <div className="mb-2 text-center">
