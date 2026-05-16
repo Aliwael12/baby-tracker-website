@@ -174,16 +174,22 @@ export default function HistoryPage() {
 
   const days = useMemo(() => groupByDay(logs), [logs]);
 
-  const lastDiaper = useMemo(() => {
-    let latest: LogEntry | null = null;
-    for (const log of logs) {
-      if (log.type !== "diaper") continue;
-      if (!latest || new Date(log.startTime) > new Date(latest.startTime)) {
-        latest = log;
+  const lastOfType = useCallback(
+    (type: string) => {
+      let latest: LogEntry | null = null;
+      for (const log of logs) {
+        if (log.type !== type) continue;
+        if (!latest || new Date(log.startTime) > new Date(latest.startTime)) {
+          latest = log;
+        }
       }
-    }
-    return latest;
-  }, [logs]);
+      return latest;
+    },
+    [logs]
+  );
+
+  const lastDiaper = useMemo(() => lastOfType("diaper"), [lastOfType]);
+  const lastFeed = useMemo(() => lastOfType("feed"), [lastOfType]);
 
   const toggleDay = (dateKey: string) => {
     setExpandedDays((prev) => {
@@ -207,27 +213,64 @@ export default function HistoryPage() {
       <PageHeader
         title="History"
         subtitle={
-          <div className="text-sm text-gray-400">
-            <p>
-              {days.length} day{days.length !== 1 ? "s" : ""} of activity
-            </p>
-            {lastDiaper && (
-              <p className="mt-0.5 text-xs">
-                🩲 Last diaper: {formatRelativeTime(lastDiaper.startTime)} (
-                {formatTime(lastDiaper.startTime)})
-                {lastDiaper.diaperStatus &&
-                  DIAPER_STATUS_META[lastDiaper.diaperStatus] && (
-                    <>
-                      {" · "}
-                      {DIAPER_STATUS_META[lastDiaper.diaperStatus].icon}{" "}
-                      {DIAPER_STATUS_META[lastDiaper.diaperStatus].label}
-                    </>
-                  )}
-              </p>
-            )}
-          </div>
+          <p className="text-sm text-gray-400">
+            {days.length} day{days.length !== 1 ? "s" : ""} of activity
+          </p>
         }
       />
+
+      {(lastFeed || lastDiaper) && (
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-white p-3 shadow-sm">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+              <span className="text-base">🤱</span> Last feed
+            </div>
+            {lastFeed ? (
+              <>
+                <div className="mt-1 text-sm font-bold text-baby-600">
+                  {formatRelativeTime(lastFeed.startTime)}
+                  {lastFeed.side && (
+                    <span className="ml-1 text-xs font-semibold text-baby-500">
+                      ({lastFeed.side === "left" ? "L" : lastFeed.side === "right" ? "R" : lastFeed.side})
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] text-gray-400">
+                  {formatTime(lastFeed.startTime)}
+                </div>
+              </>
+            ) : (
+              <div className="mt-1 text-sm text-gray-300">None yet</div>
+            )}
+          </div>
+
+          <div className="rounded-2xl bg-white p-3 shadow-sm">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+              <span className="text-base">🩲</span> Last diaper
+            </div>
+            {lastDiaper ? (
+              <>
+                <div className="mt-1 text-sm font-bold text-baby-600">
+                  {formatRelativeTime(lastDiaper.startTime)}
+                </div>
+                <div className="text-[11px] text-gray-400">
+                  {formatTime(lastDiaper.startTime)}
+                  {lastDiaper.diaperStatus &&
+                    DIAPER_STATUS_META[lastDiaper.diaperStatus] && (
+                      <>
+                        {" · "}
+                        {DIAPER_STATUS_META[lastDiaper.diaperStatus].icon}{" "}
+                        {DIAPER_STATUS_META[lastDiaper.diaperStatus].label}
+                      </>
+                    )}
+                </div>
+              </>
+            ) : (
+              <div className="mt-1 text-sm text-gray-300">None yet</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {days.length === 0 ? (
         <div className="py-12 text-center text-baby-300">

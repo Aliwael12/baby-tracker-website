@@ -60,6 +60,14 @@ function formatDateShort(dateStr: string): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+function toInputDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 interface DayStats {
   dateKey: string;
   dateLabel: string;
@@ -162,6 +170,7 @@ function StatCard({
 export default function AnalyticsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState("");
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -286,8 +295,40 @@ export default function AnalyticsPage() {
           <h2 className="mb-3 text-center text-sm font-semibold text-gray-400 uppercase tracking-widest">
             Daily Breakdown
           </h2>
-          <div className="space-y-3">
-            {dayStats.map((day) => {
+
+          <div className="mb-3 flex items-center justify-center gap-2">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="rounded-xl border border-baby-100 bg-white px-3 py-1.5 text-xs text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-baby-200"
+            />
+            {selectedDate && (
+              <button
+                onClick={() => setSelectedDate("")}
+                className="rounded-xl bg-baby-50 px-3 py-1.5 text-xs font-semibold text-baby-600 transition-all active:scale-[0.95]"
+              >
+                All
+              </button>
+            )}
+          </div>
+
+          {(() => {
+            const filtered = selectedDate
+              ? dayStats.filter((d) => toInputDate(d.dateKey) === selectedDate)
+              : dayStats;
+
+            if (filtered.length === 0) {
+              return (
+                <p className="py-8 text-center text-sm text-baby-300">
+                  No activity on this date.
+                </p>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {filtered.map((day) => {
               const chips = [
                 { icon: "🤱", value: formatMinutes(day.feedTime), show: day.feedTime > 0 },
                 { icon: "🍼", value: `${day.pumpCount}×`, show: day.pumpCount > 0 },
@@ -371,8 +412,10 @@ export default function AnalyticsPage() {
                   )}
                 </div>
               );
-            })}
-          </div>
+                })}
+              </div>
+            );
+          })()}
         </section>
       )}
     </div>
