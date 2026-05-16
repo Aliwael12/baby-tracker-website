@@ -6,8 +6,40 @@ import PageHeader from "@/components/PageHeader";
 interface LogEntry {
   id: number;
   type: string;
+  side: string | null;
+  diaperStatus: string | null;
   durationMinutes: number | null;
   startTime: string;
+}
+
+const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
+  empty: { icon: "✅", label: "Empty" },
+  wet: { icon: "💧", label: "Wet" },
+  dirty: { icon: "💩", label: "Dirty" },
+  wet_and_dirty: { icon: "💧💩", label: "Wet & Dirty" },
+};
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function formatDuration(minutes: number | null): string {
+  if (minutes === null || minutes === 0) return "";
+  if (minutes < 1) return `${Math.round(minutes * 60)}s`;
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function sideLabel(side: string | null): string {
+  if (side === "left") return "L";
+  if (side === "right") return "R";
+  return side ?? "";
 }
 
 function formatMinutes(mins: number): string {
@@ -40,6 +72,8 @@ interface DayStats {
   diaperCount: number;
   showerCount: number;
   totalLogs: number;
+  diaperLogs: LogEntry[];
+  feedLogs: LogEntry[];
 }
 
 function computeAllDayStats(logs: LogEntry[]): DayStats[] {
@@ -58,6 +92,8 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
         .filter((l) => l.type === type && l.durationMinutes)
         .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
     const count = (type: string) => dayLogs.filter((l) => l.type === type).length;
+    const byTime = (a: LogEntry, b: LogEntry) =>
+      new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
 
     results.push({
       dateKey,
@@ -71,6 +107,8 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
       diaperCount: count("diaper"),
       showerCount: count("shower"),
       totalLogs: dayLogs.length,
+      diaperLogs: dayLogs.filter((l) => l.type === "diaper").sort(byTime),
+      feedLogs: dayLogs.filter((l) => l.type === "feed").sort(byTime),
     });
   }
 
@@ -248,46 +286,92 @@ export default function AnalyticsPage() {
           <h2 className="mb-3 text-center text-sm font-semibold text-gray-400 uppercase tracking-widest">
             Daily Breakdown
           </h2>
-          <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-baby-100 bg-baby-50/50 text-gray-500">
-                    <th className="px-3 py-2 text-left font-semibold">Date</th>
-                    <th className="px-2 py-2 text-center font-semibold">🤱</th>
-                    <th className="px-2 py-2 text-center font-semibold">🍼</th>
-                    <th className="px-2 py-2 text-center font-semibold">😴</th>
-                    <th className="px-2 py-2 text-center font-semibold">🩲</th>
-                    <th className="px-2 py-2 text-center font-semibold">🚿</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dayStats.map((day, i) => (
-                    <tr
-                      key={day.dateKey}
-                      className={i % 2 === 0 ? "bg-white" : "bg-baby-50/30"}
-                    >
-                      <td className="px-3 py-2 font-medium text-gray-700">{day.dateLabel}</td>
-                      <td className="px-2 py-2 text-center text-gray-600">
-                        {day.feedTime > 0 ? formatMinutes(day.feedTime) : "—"}
-                      </td>
-                      <td className="px-2 py-2 text-center text-gray-600">
-                        {day.pumpCount > 0 ? `${day.pumpCount}×` : "—"}
-                      </td>
-                      <td className="px-2 py-2 text-center text-gray-600">
-                        {day.sleepTime > 0 ? formatMinutes(day.sleepTime) : "—"}
-                      </td>
-                      <td className="px-2 py-2 text-center text-gray-600">
-                        {day.diaperCount > 0 ? day.diaperCount : "—"}
-                      </td>
-                      <td className="px-2 py-2 text-center text-gray-600">
-                        {day.showerCount > 0 ? day.showerCount : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="space-y-3">
+            {dayStats.map((day) => {
+              const chips = [
+                { icon: "🤱", value: formatMinutes(day.feedTime), show: day.feedTime > 0 },
+                { icon: "🍼", value: `${day.pumpCount}×`, show: day.pumpCount > 0 },
+                { icon: "😴", value: formatMinutes(day.sleepTime), show: day.sleepTime > 0 },
+                { icon: "🩲", value: `${day.diaperCount}×`, show: day.diaperCount > 0 },
+                { icon: "🚿", value: `${day.showerCount}×`, show: day.showerCount > 0 },
+              ].filter((c) => c.show);
+
+              return (
+                <div key={day.dateKey} className="rounded-2xl bg-white p-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold text-gray-700">{day.dateLabel}</h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {chips.map((c) => (
+                        <span
+                          key={c.icon}
+                          className="flex items-center gap-1 rounded-full bg-baby-50 px-2 py-0.5 text-[11px] font-semibold text-gray-600"
+                        >
+                          <span>{c.icon}</span>
+                          <span>{c.value}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {day.diaperLogs.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                        🩲 Diapers
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {day.diaperLogs.map((log) => {
+                          const meta =
+                            log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus];
+                          return (
+                            <div
+                              key={log.id}
+                              className="flex items-center gap-2 text-xs text-gray-600"
+                            >
+                              <span className="tabular-nums text-gray-500">
+                                {formatTime(log.startTime)}
+                              </span>
+                              <span>
+                                {meta ? `${meta.icon} ${meta.label}` : "—"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {day.feedLogs.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                        🤱 Feeds
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {day.feedLogs.map((log) => {
+                          const side = sideLabel(log.side);
+                          const dur = formatDuration(log.durationMinutes);
+                          return (
+                            <div
+                              key={log.id}
+                              className="flex items-center gap-2 text-xs text-gray-600"
+                            >
+                              <span className="tabular-nums text-gray-500">
+                                {formatTime(log.startTime)}
+                              </span>
+                              {side && (
+                                <span className="rounded-full bg-baby-100 px-1.5 py-0.5 text-[10px] font-semibold text-baby-600">
+                                  {side}
+                                </span>
+                              )}
+                              {dur && <span className="text-gray-500">{dur}</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}

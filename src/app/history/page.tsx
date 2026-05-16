@@ -54,6 +54,17 @@ function formatDuration(minutes: number | null): string {
   return `${m}m`;
 }
 
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr);
   const today = new Date();
@@ -163,6 +174,17 @@ export default function HistoryPage() {
 
   const days = useMemo(() => groupByDay(logs), [logs]);
 
+  const lastDiaper = useMemo(() => {
+    let latest: LogEntry | null = null;
+    for (const log of logs) {
+      if (log.type !== "diaper") continue;
+      if (!latest || new Date(log.startTime) > new Date(latest.startTime)) {
+        latest = log;
+      }
+    }
+    return latest;
+  }, [logs]);
+
   const toggleDay = (dateKey: string) => {
     setExpandedDays((prev) => {
       const next = new Set(prev);
@@ -185,9 +207,25 @@ export default function HistoryPage() {
       <PageHeader
         title="History"
         subtitle={
-          <p className="text-sm text-gray-400">
-            {days.length} day{days.length !== 1 ? "s" : ""} of activity
-          </p>
+          <div className="text-sm text-gray-400">
+            <p>
+              {days.length} day{days.length !== 1 ? "s" : ""} of activity
+            </p>
+            {lastDiaper && (
+              <p className="mt-0.5 text-xs">
+                🩲 Last diaper: {formatRelativeTime(lastDiaper.startTime)} (
+                {formatTime(lastDiaper.startTime)})
+                {lastDiaper.diaperStatus &&
+                  DIAPER_STATUS_META[lastDiaper.diaperStatus] && (
+                    <>
+                      {" · "}
+                      {DIAPER_STATUS_META[lastDiaper.diaperStatus].icon}{" "}
+                      {DIAPER_STATUS_META[lastDiaper.diaperStatus].label}
+                    </>
+                  )}
+              </p>
+            )}
+          </div>
         }
       />
 
