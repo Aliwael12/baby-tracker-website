@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
 
 interface LogEntry {
@@ -58,6 +58,14 @@ function getDayKey(iso: string): string {
 function formatDateShort(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function formatPickedDate(value: string): string {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function toInputDate(dateStr: string): string {
@@ -171,6 +179,7 @@ export default function AnalyticsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("");
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -297,21 +306,27 @@ export default function AnalyticsPage() {
           </h2>
 
           <div className="mb-3 flex items-center justify-center gap-2">
-            <div className="relative">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className={`rounded-xl border border-baby-100 bg-white px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-baby-200 ${
-                  selectedDate ? "text-gray-700" : "text-transparent"
-                }`}
-              />
-              {!selectedDate && (
-                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-xs font-semibold text-baby-600">
-                  All dates
-                </span>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const el = dateInputRef.current;
+                if (!el) return;
+                if (el.showPicker) el.showPicker();
+                else el.focus();
+              }}
+              className="rounded-xl border border-baby-100 bg-white px-3 py-1.5 text-xs font-semibold text-baby-600 shadow-sm transition-all active:scale-[0.95]"
+            >
+              📅 {selectedDate ? formatPickedDate(selectedDate) : "All dates"}
+            </button>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden
+            />
             {selectedDate && (
               <button
                 onClick={() => setSelectedDate("")}
