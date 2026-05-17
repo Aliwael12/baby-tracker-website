@@ -45,7 +45,6 @@ const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
 
 const FILTER_OPTIONS = [
   { value: null, label: "All" },
-  { value: "pump", icon: "🍼", label: "Pump" },
   { value: "feed", icon: "🤱", label: "Feed" },
   { value: "sleep", icon: "😴", label: "Sleep" },
   { value: "diaper", icon: "🩲", label: "Diaper" },

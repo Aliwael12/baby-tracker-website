@@ -81,8 +81,6 @@ interface DayStats {
   dateLabel: string;
   feedTime: number;
   feedCount: number;
-  pumpTime: number;
-  pumpCount: number;
   sleepTime: number;
   sleepCount: number;
   diaperCount: number;
@@ -117,8 +115,6 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
       dateLabel: formatDateShort(dayLogs[0].startTime),
       feedTime: totalTime("feed"),
       feedCount: count("feed"),
-      pumpTime: totalTime("pump"),
-      pumpCount: count("pump"),
       sleepTime: totalTime("sleep"),
       sleepCount: count("sleep"),
       diaperCount: count("diaper"),
@@ -204,8 +200,6 @@ export default function AnalyticsPage() {
     const today = allDays.find((d) => d.dateKey === todayKey) || {
       feedTime: 0,
       feedCount: 0,
-      pumpTime: 0,
-      pumpCount: 0,
       sleepTime: 0,
       sleepCount: 0,
       diaperCount: 0,
@@ -222,7 +216,6 @@ export default function AnalyticsPage() {
       dayCount,
       avgStats: {
         feedTime: sum((d) => d.feedTime) / dayCount,
-        pumpCount: sum((d) => d.pumpCount) / dayCount,
         sleepTime: sum((d) => d.sleepTime) / dayCount,
         diaperCount: sum((d) => d.diaperCount) / dayCount,
         showerCount: sum((d) => d.showerCount) / dayCount,
@@ -231,8 +224,6 @@ export default function AnalyticsPage() {
       totalStats: {
         feedTime: sum((d) => d.feedTime),
         feedCount: sum((d) => d.feedCount),
-        pumpTime: sum((d) => d.pumpTime),
-        pumpCount: sum((d) => d.pumpCount),
         sleepTime: sum((d) => d.sleepTime),
         sleepCount: sum((d) => d.sleepCount),
         diaperCount: sum((d) => d.diaperCount),
@@ -270,13 +261,6 @@ export default function AnalyticsPage() {
           avg={formatMinutes(Math.round(avgStats.feedTime))}
           total={formatMinutes(totalStats.feedTime)}
           totalCount={totalStats.feedCount}
-        />
-        <StatCard
-          icon="🍼"
-          label="Pumping"
-          today={String(todayStats.pumpCount)}
-          avg={String(Math.round(avgStats.pumpCount))}
-          total={String(totalStats.pumpCount)}
         />
         <StatCard
           icon="😴"
@@ -357,7 +341,6 @@ export default function AnalyticsPage() {
                 {filtered.map((day) => {
               const chips = [
                 { icon: "🤱", value: formatMinutes(day.feedTime), show: day.feedTime > 0 },
-                { icon: "🍼", value: `${day.pumpCount}×`, show: day.pumpCount > 0 },
                 { icon: "😴", value: formatMinutes(day.sleepTime), show: day.sleepTime > 0 },
                 { icon: "🩲", value: `${day.diaperCount}×`, show: day.diaperCount > 0 },
                 { icon: "🚿", value: `${day.showerCount}×`, show: day.showerCount > 0 },
