@@ -12,7 +12,7 @@ import DailyActionButtons from "@/components/DailyActionButtons";
 import { useUserName } from "@/lib/useUserName";
 
 // Sleep and diaper sit in a compact 2-column grid. Shower and vitamin are
-// once-daily quick actions surfaced at the top via DailyActionButtons.
+// once-daily quick actions in the same grid via DailyActionButtons.
 const SQUARE_GRID: ActivityType[] = ["sleep", "diaper"];
 
 export default function Home() {
@@ -125,12 +125,6 @@ export default function Home() {
         }
       />
 
-      <DailyActionButtons
-        userName={userName}
-        logs={logs}
-        onLogSaved={fetchLogs}
-      />
-
       <section className="mb-4 space-y-3">
         <LastFeedBanner logs={logs} />
         <ActivityTimerCard
@@ -149,6 +143,11 @@ export default function Home() {
             />
           ))}
         </div>
+        <DailyActionButtons
+          userName={userName}
+          logs={logs}
+          onLogSaved={fetchLogs}
+        />
       </section>
 
       {showManualEntry && (
