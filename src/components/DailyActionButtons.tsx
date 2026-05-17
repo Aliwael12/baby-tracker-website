@@ -60,18 +60,13 @@ export default function DailyActionButtons({
       {DAILY_ACTIONS.map((d) => {
         const done = isLoggedToday(d.type);
         return (
-          <div
-            key={d.type}
-            className={`flex rounded-2xl bg-white p-3 shadow-md transition-opacity ${
-              done ? "opacity-60" : ""
-            }`}
-          >
+          <div key={d.type} className="flex rounded-2xl bg-white p-3 shadow-md">
             <button
               onClick={() => handleLog(d.type)}
               disabled={savingType !== null || done}
-              className={`flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 rounded-xl border-2 transition-all active:scale-[0.95] disabled:opacity-100 ${
+              className={`relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 rounded-xl border-2 transition-all active:scale-[0.95] disabled:opacity-100 ${
                 done
-                  ? "border-green-200 bg-green-50/60"
+                  ? "border-green-300 bg-green-50"
                   : "border-baby-200 bg-baby-50 disabled:opacity-60"
               }`}
               aria-label={
@@ -81,35 +76,40 @@ export default function DailyActionButtons({
                 done ? `${d.label} logged for today` : `Log ${d.label} for today`
               }
             >
-              {done ? (
+              <span
+                className={`flex flex-col items-center gap-1 transition-opacity ${
+                  done ? "opacity-30" : ""
+                }`}
+              >
+                <span className="text-2xl">{d.icon}</span>
+                <span className="text-xs font-semibold text-baby-600">
+                  {savingType === d.type ? "Saving..." : d.label}
+                </span>
+              </span>
+              {done && (
                 <span
                   key="done"
-                  className="animate-tick-pop flex h-9 w-9 items-center justify-center rounded-full bg-green-500"
+                  className="animate-tick-pop absolute inset-0 flex items-center justify-center"
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M5 13l4 4L19 7"
-                      stroke="white"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="animate-tick-draw"
-                    />
-                  </svg>
-                </span>
-              ) : (
-                <>
-                  <span className="text-2xl">{d.icon}</span>
-                  <span className="text-xs font-semibold text-baby-600">
-                    {savingType === d.type ? "Saving..." : d.label}
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500 shadow-md">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                    >
+                      <path
+                        d="M5 13l4 4L19 7"
+                        stroke="white"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="animate-tick-draw"
+                      />
+                    </svg>
                   </span>
-                </>
+                </span>
               )}
             </button>
           </div>
