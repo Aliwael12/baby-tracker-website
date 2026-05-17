@@ -78,7 +78,7 @@ export default function DailyActionButtons({
             >
               <span
                 className={`flex flex-col items-center gap-1 transition-opacity ${
-                  done ? "opacity-30" : ""
+                  done ? "opacity-70" : ""
                 }`}
               >
                 <span className="text-2xl">{d.icon}</span>
@@ -89,12 +89,12 @@ export default function DailyActionButtons({
               {done && (
                 <span
                   key="done"
-                  className="animate-tick-pop absolute inset-0 flex items-center justify-center"
+                  className="animate-tick-pop absolute right-1.5 top-1.5 flex items-center justify-center"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500 shadow-md">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-green-500 shadow-md">
                     <svg
-                      width="20"
-                      height="20"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       aria-hidden
