@@ -8,12 +8,12 @@ import type { ActivityType } from "@/components/ActivityTimerCard";
 import ManualEntry from "@/components/ManualEntry";
 import PageHeader from "@/components/PageHeader";
 import LastFeedBanner from "@/components/LastFeedBanner";
+import DailyActionButtons from "@/components/DailyActionButtons";
 import { useUserName } from "@/lib/useUserName";
 
-// Pump keeps its full-width card (L/R selection); the rest are compact
-// squares in a 2-column grid to cut down on scrolling.
-const FULL_WIDTH: ActivityType[] = ["pump"];
-const SQUARE_GRID: ActivityType[] = ["sleep", "diaper", "shower", "vitamin"];
+// Sleep and diaper sit in a compact 2-column grid. Shower and vitamin are
+// once-daily quick actions surfaced at the top via DailyActionButtons.
+const SQUARE_GRID: ActivityType[] = ["sleep", "diaper"];
 
 export default function Home() {
   const [userName, setUserName] = useUserName();
@@ -125,6 +125,12 @@ export default function Home() {
         }
       />
 
+      <DailyActionButtons
+        userName={userName}
+        logs={logs}
+        onLogSaved={fetchLogs}
+      />
+
       <section className="mb-4 space-y-3">
         <LastFeedBanner logs={logs} />
         <ActivityTimerCard
@@ -132,14 +138,6 @@ export default function Home() {
           userName={userName}
           onLogSaved={fetchLogs}
         />
-        {FULL_WIDTH.map((type) => (
-          <ActivityTimerCard
-            key={type}
-            type={type}
-            userName={userName}
-            onLogSaved={fetchLogs}
-          />
-        ))}
         <div className="grid grid-cols-2 items-start gap-3">
           {SQUARE_GRID.map((type) => (
             <ActivityTimerCard
