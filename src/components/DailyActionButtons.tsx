@@ -60,13 +60,18 @@ export default function DailyActionButtons({
       {DAILY_ACTIONS.map((d) => {
         const done = isLoggedToday(d.type);
         return (
-          <div key={d.type} className="flex rounded-2xl bg-white p-3 shadow-md">
+          <div
+            key={d.type}
+            className={`flex rounded-2xl bg-white p-3 shadow-md transition-opacity ${
+              done ? "opacity-60" : ""
+            }`}
+          >
             <button
               onClick={() => handleLog(d.type)}
               disabled={savingType !== null || done}
               className={`flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 rounded-xl border-2 transition-all active:scale-[0.95] disabled:opacity-100 ${
                 done
-                  ? "border-green-300 bg-green-50"
+                  ? "border-green-200 bg-green-50/60"
                   : "border-baby-200 bg-baby-50 disabled:opacity-60"
               }`}
               aria-label={
