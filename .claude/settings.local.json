@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx --no-install next lint --dir src)"
+      "Bash(npx --no-install next lint --dir src)",
+      "Bash(git push *)",
+      "Bash(git stash *)",
+      "Bash(git rebase *)"
     ]
   }
 }

@@ -56,21 +56,12 @@ export default function LastFeedBanner({ logs }: LastFeedBannerProps) {
     );
   }, [logs]);
 
-  const lastVitamin = useMemo(() => {
-    const vitamins = logs.filter((l) => l.type === "vitamin");
-    if (vitamins.length === 0) return null;
-    return vitamins.reduce((latest, l) =>
-      new Date(l.startTime).getTime() > new Date(latest.startTime).getTime() ? l : latest
-    );
-  }, [logs]);
-
   // now === 0 before the client clock mounts; avoid rendering stale elapsed.
-  if (now === 0 || (!lastFeed && !lastDiaper && !lastVitamin)) return null;
+  if (now === 0 || (!lastFeed && !lastDiaper)) return null;
 
   const feedSide = lastFeed ? sideToLetter(lastFeed.side) : null;
   const feedElapsed = lastFeed ? now - new Date(lastFeed.startTime).getTime() : 0;
   const diaperElapsed = lastDiaper ? now - new Date(lastDiaper.startTime).getTime() : 0;
-  const vitaminElapsed = lastVitamin ? now - new Date(lastVitamin.startTime).getTime() : 0;
   const diaperStatusMeta =
     lastDiaper && lastDiaper.diaperStatus
       ? DIAPER_STATUS_META[lastDiaper.diaperStatus] ?? null
@@ -105,14 +96,6 @@ export default function LastFeedBanner({ logs }: LastFeedBannerProps) {
                 </span>
               </>
             )}
-          </span>
-        </div>
-      )}
-      {lastVitamin && (
-        <div className="rounded-2xl bg-gradient-to-r from-emerald-50/90 to-baby-50 p-3 text-center shadow-sm">
-          <span className="text-sm text-gray-600">
-            💊 Last vitamin was:{" "}
-            <span className="font-bold text-baby-600">{formatElapsed(vitaminElapsed)}</span>
           </span>
         </div>
       )}
