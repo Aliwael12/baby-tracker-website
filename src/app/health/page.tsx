@@ -20,15 +20,17 @@ interface HealthLog {
   comments: string | null;
 }
 
-function formatDate(iso: string): string {
+function formatLoggedAt(iso: string): string {
   const d = new Date(iso);
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
 
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  if (d.toDateString() === today.toDateString()) return `Today, ${time}`;
+  if (d.toDateString() === yesterday.toDateString()) return `Yesterday, ${time}`;
+  const date = d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  return `${date}, ${time}`;
 }
 
 function toLocalDateStr(d: Date): string {
@@ -441,7 +443,7 @@ export default function HealthPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <HealthLogSummary log={log} />
-                    <div className="mt-1 text-xs text-gray-400">{formatDate(log.startTime)}</div>
+                    <div className="mt-1 text-xs text-gray-400">{formatLoggedAt(log.startTime)}</div>
                     {log.comments && (
                       <p className="mt-0.5 text-xs text-gray-500 italic">
                         &ldquo;{log.comments}&rdquo;
