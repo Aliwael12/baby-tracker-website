@@ -41,13 +41,6 @@ function toLocalTimeStr(d: Date): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function toIsoOnDateWithCurrentClock(dateStr: string): string {
-  const now = new Date();
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  const t = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-  return new Date(`${dateStr}T${t}`).toISOString();
-}
-
 function HealthLogSummary({ log }: { log: HealthLog }) {
   const cond = log.healthCondition;
   const meta = cond ? HEALTH_CONDITION_META[cond as HealthCondition] : null;
@@ -86,8 +79,8 @@ export default function HealthPage() {
   const [feverCelsius, setFeverCelsius] = useState("");
   const [comments, setComments] = useState("");
   const [saving, setSaving] = useState(false);
-  const [logDateChoice, setLogDateChoice] = useState<"today" | "custom">("today");
-  const [customDate, setCustomDate] = useState(() => toLocalDateStr(new Date()));
+  const [dateStr, setDateStr] = useState(() => toLocalDateStr(new Date()));
+  const [timeStr, setTimeStr] = useState(() => toLocalTimeStr(new Date()));
 
   const [editingLog, setEditingLog] = useState<HealthLog | null>(null);
   const [editCondition, setEditCondition] = useState<HealthCondition | null>(null);
@@ -151,10 +144,7 @@ export default function HealthPage() {
     if (!canSave || !condition) return;
     setSaving(true);
 
-    const startIso =
-      logDateChoice === "today"
-        ? new Date().toISOString()
-        : toIsoOnDateWithCurrentClock(customDate);
+    const startIso = new Date(`${dateStr}T${timeStr}`).toISOString();
 
     const payload = {
       type: "health",
@@ -190,8 +180,9 @@ export default function HealthPage() {
     setDose("");
     setFeverCelsius("");
     setComments("");
-    setLogDateChoice("today");
-    setCustomDate(toLocalDateStr(new Date()));
+    const now = new Date();
+    setDateStr(toLocalDateStr(now));
+    setTimeStr(toLocalTimeStr(now));
   };
 
   const handleDeleteLog = useCallback(
@@ -246,10 +237,14 @@ export default function HealthPage() {
   };
 
   const openForm = () => {
+    const now = new Date();
     setShowForm(true);
-    setLogDateChoice("today");
-    setCustomDate(toLocalDateStr(new Date()));
+    setDateStr(toLocalDateStr(now));
+    setTimeStr(toLocalTimeStr(now));
   };
+
+  const todayStr = toLocalDateStr(new Date());
+  const isToday = dateStr === todayStr;
 
   if (loading) {
     return (
@@ -281,39 +276,55 @@ export default function HealthPage() {
           <h3 className="mb-4 text-center text-sm font-bold text-gray-700">New Health Entry</h3>
 
           <p className="mb-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Date
+            When
           </p>
-          <div className="mb-3 flex gap-2">
+          <div className="mb-3 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setLogDateChoice("today")}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.97] ${
-                logDateChoice === "today"
+              onClick={() => setDateStr(todayStr)}
+              className={`shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all active:scale-[0.97] ${
+                isToday
                   ? "bg-baby-400 text-white shadow-sm"
                   : "border-2 border-baby-200 bg-baby-50 text-baby-600"
               }`}
             >
               Today
             </button>
+            <input
+              type="time"
+              value={timeStr}
+              onChange={(e) => setTimeStr(e.target.value)}
+              className="min-w-0 flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 px-2 py-2.5 text-sm outline-none focus:border-baby-400"
+            />
             <button
               type="button"
-              onClick={() => setLogDateChoice("custom")}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.97] ${
-                logDateChoice === "custom"
-                  ? "bg-baby-400 text-white shadow-sm"
-                  : "border-2 border-baby-200 bg-baby-50 text-baby-600"
-              }`}
+              onClick={() => setTimeStr(toLocalTimeStr(new Date()))}
+              className="shrink-0 rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm font-semibold text-baby-600 transition-all active:scale-[0.97]"
             >
-              Another date
+              Now
             </button>
+            <label
+              className="relative flex h-[42px] w-[42px] shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-baby-200 bg-baby-50 text-lg transition-all active:scale-[0.97] hover:border-baby-300"
+              title="Pick another date"
+              aria-label="Pick another date"
+            >
+              📅
+              <input
+                type="date"
+                value={dateStr}
+                onChange={(e) => setDateStr(e.target.value)}
+                className="absolute inset-0 cursor-pointer opacity-0"
+              />
+            </label>
           </div>
-          {logDateChoice === "custom" && (
-            <input
-              type="date"
-              value={customDate}
-              onChange={(e) => setCustomDate(e.target.value)}
-              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
-            />
+          {!isToday && (
+            <p className="mb-3 text-center text-xs text-gray-400">
+              {new Date(`${dateStr}T12:00:00`).toLocaleDateString([], {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
+            </p>
           )}
 
           <p className="mb-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">

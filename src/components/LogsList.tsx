@@ -60,6 +60,7 @@ const FILTER_OPTIONS = [
   { value: "diaper", icon: "🩲", label: "Diaper" },
   { value: "shower", icon: "🚿", label: "Shower" },
   { value: "vitamin", icon: "💊", label: "Vitamin" },
+  { value: "health", icon: "🩺", label: "Health" },
 ] as const;
 
 function formatDuration(minutes: number | null): string {
