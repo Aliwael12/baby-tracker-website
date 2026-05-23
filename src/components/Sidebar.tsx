@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/", icon: "🏠", label: "Home" },
   { href: "/log", icon: "📋", label: "Activity Log" },
   { href: "/growth", icon: "📏", label: "Growth" },
+  { href: "/health", icon: "🩺", label: "Health" },
   { href: "/analytics", icon: "📊", label: "Analytics" },
   { href: "/history", icon: "📅", label: "History" },
 ];

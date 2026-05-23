@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isHealthCondition } from "@/lib/health";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
@@ -32,13 +33,28 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { comments, diaperStatus, startTime, endTime, weightKg, heightCm } = body as {
+  const {
+    comments,
+    diaperStatus,
+    startTime,
+    endTime,
+    weightKg,
+    heightCm,
+    healthCondition,
+    medication,
+    dose,
+    feverCelsius,
+  } = body as {
     comments?: string | null;
     diaperStatus?: string | null;
     startTime?: string | null;
     endTime?: string | null;
     weightKg?: number | string | null;
     heightCm?: number | string | null;
+    healthCondition?: string | null;
+    medication?: string | null;
+    dose?: string | null;
+    feverCelsius?: number | string | null;
   };
 
   const validDiaperStatuses = ["empty", "wet", "dirty", "wet_and_dirty"];
@@ -108,6 +124,67 @@ export async function PATCH(
     }
     data.weightKg = nextW;
     data.heightCm = nextH;
+  }
+
+  if (
+    healthCondition !== undefined ||
+    medication !== undefined ||
+    dose !== undefined ||
+    feverCelsius !== undefined
+  ) {
+    if (existingForDuration.type !== "health") {
+      return NextResponse.json(
+        { error: "Health fields can only be updated on health logs" },
+        { status: 400 }
+      );
+    }
+
+    const nextCondition =
+      healthCondition !== undefined
+        ? healthCondition && isHealthCondition(healthCondition)
+          ? healthCondition
+          : null
+        : existingForDuration.healthCondition;
+
+    if (!nextCondition || !isHealthCondition(nextCondition)) {
+      return NextResponse.json(
+        { error: "A valid health condition is required" },
+        { status: 400 }
+      );
+    }
+
+    if (healthCondition !== undefined) {
+      data.healthCondition = nextCondition;
+    }
+
+    if (medication !== undefined) {
+      data.medication =
+        medication && typeof medication === "string" ? medication.trim() || null : null;
+    }
+
+    if (dose !== undefined) {
+      data.dose = dose && typeof dose === "string" ? dose.trim() || null : null;
+    }
+
+    if (nextCondition === "fever") {
+      const rawFever =
+        feverCelsius !== undefined ? feverCelsius : existingForDuration.feverCelsius;
+      const temp =
+        rawFever !== undefined && rawFever !== null && rawFever !== ""
+          ? parseFloat(String(rawFever))
+          : NaN;
+      if (isNaN(temp) || temp <= 0) {
+        return NextResponse.json(
+          { error: "Temperature is required when condition is fever" },
+          { status: 400 }
+        );
+      }
+      if (feverCelsius !== undefined || healthCondition !== undefined) {
+        data.feverCelsius = temp;
+      }
+    } else if (healthCondition !== undefined || feverCelsius !== undefined) {
+      data.feverCelsius = null;
+    }
   }
 
   if (data.startTime || data.endTime !== undefined) {

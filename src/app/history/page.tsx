@@ -24,6 +24,8 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   diaper: { icon: "🩲", label: "Diaper" },
   shower: { icon: "🚿", label: "Shower" },
   vitamin: { icon: "💊", label: "Vitamin" },
+  growth: { icon: "📏", label: "Growth" },
+  health: { icon: "🩺", label: "Health" },
 };
 
 const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {

@@ -3,6 +3,11 @@
 import { useState } from "react";
 import PauseTimelineIndicator from "@/components/PauseTimelineIndicator";
 import { SwipeableRow, DeleteConfirm } from "@/components/SwipeableLogRow";
+import {
+  HEALTH_CONDITIONS,
+  HEALTH_CONDITION_META,
+  type HealthCondition,
+} from "@/lib/health";
 
 interface LogEntry {
   id: number;
@@ -11,6 +16,10 @@ interface LogEntry {
   diaperStatus: string | null;
   weightKg: number | null;
   heightCm: number | null;
+  healthCondition: string | null;
+  medication: string | null;
+  dose: string | null;
+  feverCelsius: number | null;
   startTime: string;
   endTime: string | null;
   durationMinutes: number | null;
@@ -34,6 +43,7 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   shower: { icon: "🚿", label: "Shower" },
   vitamin: { icon: "💊", label: "Vitamin" },
   growth: { icon: "📏", label: "Growth" },
+  health: { icon: "🩺", label: "Health" },
 };
 
 const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
@@ -170,6 +180,27 @@ function EditLogModal({
       ? String(log.heightCm)
       : ""
   );
+  const [editHealthCondition, setEditHealthCondition] = useState<HealthCondition | null>(
+    () =>
+      log.type === "health" &&
+      log.healthCondition &&
+      log.healthCondition in HEALTH_CONDITION_META
+        ? (log.healthCondition as HealthCondition)
+        : null
+  );
+  const [editMedication, setEditMedication] = useState(() =>
+    log.type === "health" ? (log.medication ?? "") : ""
+  );
+  const [editDose, setEditDose] = useState(() =>
+    log.type === "health" ? (log.dose ?? "") : ""
+  );
+  const [editFeverCelsius, setEditFeverCelsius] = useState(() =>
+    log.type === "health" &&
+    log.feverCelsius !== null &&
+    log.feverCelsius !== undefined
+      ? String(log.feverCelsius)
+      : ""
+  );
 
   const handleSaveEdit = async () => {
     const payload: Record<string, unknown> = {
@@ -188,11 +219,26 @@ function EditLogModal({
       payload.heightCm = h;
     }
 
+    if (log.type === "health") {
+      if (!editHealthCondition) return;
+      if (
+        editHealthCondition === "fever" &&
+        (!editFeverCelsius.trim() || parseFloat(editFeverCelsius) <= 0)
+      ) {
+        return;
+      }
+      payload.healthCondition = editHealthCondition;
+      payload.medication = editMedication.trim() || null;
+      payload.dose = editDose.trim() || null;
+      payload.feverCelsius =
+        editHealthCondition === "fever" ? parseFloat(editFeverCelsius) : null;
+    }
+
     if (editDateStr && editStartTimeStr) {
       const newStart = new Date(`${editDateStr}T${editStartTimeStr}`);
       payload.startTime = newStart.toISOString();
 
-      if (log.type === "diaper" || log.type === "growth") {
+      if (log.type === "diaper" || log.type === "growth" || log.type === "health") {
         payload.endTime = newStart.toISOString();
       } else if (editEndTimeStr) {
         const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
@@ -249,7 +295,7 @@ function EditLogModal({
           className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
         />
 
-        {log.type === "diaper" || log.type === "growth" ? (
+        {log.type === "diaper" || log.type === "growth" || log.type === "health" ? (
           <>
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Time
@@ -315,6 +361,71 @@ function EditLogModal({
               value={editHeightStr}
               onChange={(e) => setEditHeightStr(e.target.value)}
               placeholder="e.g. 52"
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+          </>
+        )}
+
+        {log.type === "health" && (
+          <>
+            <p className="mb-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Condition
+            </p>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              {HEALTH_CONDITIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setEditHealthCondition(opt.value);
+                    if (opt.value !== "fever") setEditFeverCelsius("");
+                  }}
+                  className={`flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-semibold transition-all ${
+                    editHealthCondition === opt.value
+                      ? "bg-baby-400 text-white shadow-sm"
+                      : "border-2 border-baby-200 bg-baby-50 text-baby-600"
+                  }`}
+                >
+                  <span className="text-base">{opt.icon}</span>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {editHealthCondition === "fever" && (
+              <>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Temperature (°C)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="35"
+                  max="42"
+                  value={editFeverCelsius}
+                  onChange={(e) => setEditFeverCelsius(e.target.value)}
+                  placeholder="e.g. 38.2"
+                  className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+                />
+              </>
+            )}
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Medication / treatment
+            </label>
+            <input
+              type="text"
+              value={editMedication}
+              onChange={(e) => setEditMedication(e.target.value)}
+              placeholder="e.g. Paracetamol"
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Dose
+            </label>
+            <input
+              type="text"
+              value={editDose}
+              onChange={(e) => setEditDose(e.target.value)}
+              placeholder="e.g. 2.5 ml"
               className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
             />
           </>
@@ -490,6 +601,28 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                           </span>
                         )}
                       </div>
+                    )}
+                    {log.type === "health" && log.healthCondition && (
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {HEALTH_CONDITION_META[log.healthCondition as HealthCondition] && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">
+                            {HEALTH_CONDITION_META[log.healthCondition as HealthCondition].icon}{" "}
+                            {HEALTH_CONDITION_META[log.healthCondition as HealthCondition].label}
+                          </span>
+                        )}
+                        {log.feverCelsius !== null && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">
+                            🌡️ {log.feverCelsius}°C
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {log.type === "health" && (log.medication || log.dose) && (
+                      <p className="mt-1 text-xs text-gray-600">
+                        {log.medication}
+                        {log.medication && log.dose && " · "}
+                        {log.dose && <span className="text-gray-500">Dose: {log.dose}</span>}
+                      </p>
                     )}
                     {log.comments && (
                       <p className="mt-1 text-xs text-gray-500 italic">
