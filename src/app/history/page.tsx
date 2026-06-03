@@ -8,6 +8,7 @@ interface LogEntry {
   id: number;
   type: string;
   side: string | null;
+  amountMl: number | null;
   diaperStatus: string | null;
   startTime: string;
   endTime: string | null;
@@ -85,6 +86,7 @@ interface DayGroup {
   logs: LogEntry[];
   stats: {
     feedTime: number;
+    pumpMl: number;
     pumpCount: number;
     sleepTime: number;
     diaperCount: number;
@@ -109,6 +111,10 @@ function groupByDay(logs: LogEntry[]): DayGroup[] {
         .filter((l) => l.type === type && l.durationMinutes)
         .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
     const count = (type: string) => dayLogs.filter((l) => l.type === type).length;
+    const totalMl = (type: string) =>
+      dayLogs
+        .filter((l) => l.type === type && l.amountMl)
+        .reduce((sum, l) => sum + (l.amountMl ?? 0), 0);
 
     result.push({
       dateKey,
@@ -116,6 +122,7 @@ function groupByDay(logs: LogEntry[]): DayGroup[] {
       logs: dayLogs,
       stats: {
         feedTime: totalTime("feed"),
+        pumpMl: totalMl("pump"),
         pumpCount: count("pump"),
         sleepTime: totalTime("sleep"),
         diaperCount: count("diaper"),
@@ -131,7 +138,7 @@ function groupByDay(logs: LogEntry[]): DayGroup[] {
 function DayStatsBar({ stats }: { stats: DayGroup["stats"] }) {
   const items = [
     { icon: "🤱", value: formatMinutes(stats.feedTime), show: stats.feedTime > 0 },
-    { icon: "🍼", value: `${stats.pumpCount}×`, show: stats.pumpCount > 0 },
+    { icon: "🍼", value: `${Math.round(stats.pumpMl).toLocaleString()} ml`, show: stats.pumpMl > 0 },
     { icon: "😴", value: formatMinutes(stats.sleepTime), show: stats.sleepTime > 0 },
     { icon: "🩲", value: `${stats.diaperCount}×`, show: stats.diaperCount > 0 },
     { icon: "🚿", value: `${stats.showerCount}×`, show: stats.showerCount > 0 },
@@ -349,6 +356,13 @@ export default function HistoryPage() {
                                 )}
                               </div>
                               <PauseTimelineIndicator pauseTimelineJson={log.pauseTimelineJson} />
+                              {log.type === "pump" && log.amountMl !== null && (
+                                <div className="mt-0.5">
+                                  <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                                    🍼 {log.amountMl} ml
+                                  </span>
+                                </div>
+                              )}
                               {log.type === "diaper" && log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus] && (
                                 <div className="mt-0.5">
                                   <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">

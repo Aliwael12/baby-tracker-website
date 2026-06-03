@@ -7,6 +7,7 @@ interface LogEntry {
   id: number;
   type: string;
   side: string | null;
+  amountMl: number | null;
   diaperStatus: string | null;
   durationMinutes: number | null;
   startTime: string;
@@ -51,6 +52,10 @@ function formatMinutes(mins: number): string {
   return `${m}m`;
 }
 
+function formatMl(ml: number): string {
+  return `${Math.round(ml).toLocaleString()} ml`;
+}
+
 function getDayKey(iso: string): string {
   return new Date(iso).toDateString();
 }
@@ -81,6 +86,8 @@ interface DayStats {
   dateLabel: string;
   feedTime: number;
   feedCount: number;
+  pumpMl: number;
+  pumpCount: number;
   sleepTime: number;
   sleepCount: number;
   diaperCount: number;
@@ -89,6 +96,7 @@ interface DayStats {
   totalLogs: number;
   diaperLogs: LogEntry[];
   feedLogs: LogEntry[];
+  pumpLogs: LogEntry[];
 }
 
 function computeAllDayStats(logs: LogEntry[]): DayStats[] {
@@ -107,6 +115,10 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
         .filter((l) => l.type === type && l.durationMinutes)
         .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
     const count = (type: string) => dayLogs.filter((l) => l.type === type).length;
+    const totalMl = (type: string) =>
+      dayLogs
+        .filter((l) => l.type === type && l.amountMl)
+        .reduce((sum, l) => sum + (l.amountMl ?? 0), 0);
     const byTime = (a: LogEntry, b: LogEntry) =>
       new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
 
@@ -115,6 +127,8 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
       dateLabel: formatDateShort(dayLogs[0].startTime),
       feedTime: totalTime("feed"),
       feedCount: count("feed"),
+      pumpMl: totalMl("pump"),
+      pumpCount: count("pump"),
       sleepTime: totalTime("sleep"),
       sleepCount: count("sleep"),
       diaperCount: count("diaper"),
@@ -123,6 +137,7 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
       totalLogs: dayLogs.length,
       diaperLogs: dayLogs.filter((l) => l.type === "diaper").sort(byTime),
       feedLogs: dayLogs.filter((l) => l.type === "feed").sort(byTime),
+      pumpLogs: dayLogs.filter((l) => l.type === "pump").sort(byTime),
     });
   }
 
@@ -200,6 +215,8 @@ export default function AnalyticsPage() {
     const today = allDays.find((d) => d.dateKey === todayKey) || {
       feedTime: 0,
       feedCount: 0,
+      pumpMl: 0,
+      pumpCount: 0,
       sleepTime: 0,
       sleepCount: 0,
       diaperCount: 0,
@@ -216,6 +233,7 @@ export default function AnalyticsPage() {
       dayCount,
       avgStats: {
         feedTime: sum((d) => d.feedTime) / dayCount,
+        pumpMl: sum((d) => d.pumpMl) / dayCount,
         sleepTime: sum((d) => d.sleepTime) / dayCount,
         diaperCount: sum((d) => d.diaperCount) / dayCount,
         showerCount: sum((d) => d.showerCount) / dayCount,
@@ -224,6 +242,8 @@ export default function AnalyticsPage() {
       totalStats: {
         feedTime: sum((d) => d.feedTime),
         feedCount: sum((d) => d.feedCount),
+        pumpMl: sum((d) => d.pumpMl),
+        pumpCount: sum((d) => d.pumpCount),
         sleepTime: sum((d) => d.sleepTime),
         sleepCount: sum((d) => d.sleepCount),
         diaperCount: sum((d) => d.diaperCount),
@@ -261,6 +281,14 @@ export default function AnalyticsPage() {
           avg={formatMinutes(Math.round(avgStats.feedTime))}
           total={formatMinutes(totalStats.feedTime)}
           totalCount={totalStats.feedCount}
+        />
+        <StatCard
+          icon="🍼"
+          label="Pumping"
+          today={formatMl(todayStats.pumpMl)}
+          avg={formatMl(avgStats.pumpMl)}
+          total={formatMl(totalStats.pumpMl)}
+          totalCount={totalStats.pumpCount}
         />
         <StatCard
           icon="😴"
@@ -341,6 +369,7 @@ export default function AnalyticsPage() {
                 {filtered.map((day) => {
               const chips = [
                 { icon: "🤱", value: formatMinutes(day.feedTime), show: day.feedTime > 0 },
+                { icon: "🍼", value: formatMl(day.pumpMl), show: day.pumpMl > 0 },
                 { icon: "😴", value: formatMinutes(day.sleepTime), show: day.sleepTime > 0 },
                 { icon: "🩲", value: `${day.diaperCount}×`, show: day.diaperCount > 0 },
                 { icon: "🚿", value: `${day.showerCount}×`, show: day.showerCount > 0 },
@@ -417,6 +446,31 @@ export default function AnalyticsPage() {
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                  )}
+
+                  {day.pumpLogs.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                        🍼 Pumps
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {day.pumpLogs.map((log) => (
+                          <div
+                            key={log.id}
+                            className="flex items-center gap-2 text-xs text-gray-600"
+                          >
+                            <span className="tabular-nums text-gray-500">
+                              {formatTime(log.startTime)}
+                            </span>
+                            {log.amountMl !== null && (
+                              <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">
+                                {log.amountMl} ml
+                              </span>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

@@ -132,6 +132,11 @@ export default function Home() {
           userName={userName}
           onLogSaved={fetchLogs}
         />
+        <ActivityTimerCard
+          type="pump"
+          userName={userName}
+          onLogSaved={fetchLogs}
+        />
         <div className="grid grid-cols-2 items-start gap-3">
           {SQUARE_GRID.map((type) => (
             <ActivityTimerCard

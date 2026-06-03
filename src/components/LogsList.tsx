@@ -13,6 +13,7 @@ interface LogEntry {
   id: number;
   type: string;
   side: string | null;
+  amountMl: number | null;
   diaperStatus: string | null;
   weightKg: number | null;
   heightCm: number | null;
@@ -56,6 +57,7 @@ const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
 const FILTER_OPTIONS = [
   { value: null, label: "All" },
   { value: "feed", icon: "🤱", label: "Feed" },
+  { value: "pump", icon: "🍼", label: "Pump" },
   { value: "sleep", icon: "😴", label: "Sleep" },
   { value: "diaper", icon: "🩲", label: "Diaper" },
   { value: "shower", icon: "🚿", label: "Shower" },
@@ -202,6 +204,11 @@ function EditLogModal({
       ? String(log.feverCelsius)
       : ""
   );
+  const [editAmountMl, setEditAmountMl] = useState(() =>
+    log.type === "pump" && log.amountMl !== null && log.amountMl !== undefined
+      ? String(log.amountMl)
+      : ""
+  );
 
   const handleSaveEdit = async () => {
     const payload: Record<string, unknown> = {
@@ -210,6 +217,12 @@ function EditLogModal({
 
     if (log.type === "diaper") {
       payload.diaperStatus = editDiaperStatus;
+    }
+
+    if (log.type === "pump") {
+      const ml = editAmountMl.trim() ? parseFloat(editAmountMl) : NaN;
+      if (isNaN(ml) || ml <= 0) return;
+      payload.amountMl = ml;
     }
 
     if (log.type === "growth") {
@@ -239,7 +252,12 @@ function EditLogModal({
       const newStart = new Date(`${editDateStr}T${editStartTimeStr}`);
       payload.startTime = newStart.toISOString();
 
-      if (log.type === "diaper" || log.type === "growth" || log.type === "health") {
+      if (
+        log.type === "diaper" ||
+        log.type === "growth" ||
+        log.type === "health" ||
+        log.type === "pump"
+      ) {
         payload.endTime = newStart.toISOString();
       } else if (editEndTimeStr) {
         const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
@@ -296,7 +314,10 @@ function EditLogModal({
           className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
         />
 
-        {log.type === "diaper" || log.type === "growth" || log.type === "health" ? (
+        {log.type === "diaper" ||
+        log.type === "growth" ||
+        log.type === "health" ||
+        log.type === "pump" ? (
           <>
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Time
@@ -362,6 +383,24 @@ function EditLogModal({
               value={editHeightStr}
               onChange={(e) => setEditHeightStr(e.target.value)}
               placeholder="e.g. 52"
+              className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
+            />
+          </>
+        )}
+
+        {log.type === "pump" && (
+          <>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Amount (ml)
+            </label>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="1"
+              min="0"
+              value={editAmountMl}
+              onChange={(e) => setEditAmountMl(e.target.value)}
+              placeholder="e.g. 120"
               className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400 placeholder:text-baby-300"
             />
           </>
@@ -579,6 +618,13 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                       <div className="mt-1">
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
                           ⏱ {formatGapLabel(gap!)} since previous feed
+                        </span>
+                      </div>
+                    )}
+                    {log.type === "pump" && log.amountMl !== null && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                          🍼 {log.amountMl} ml
                         </span>
                       </div>
                     )}

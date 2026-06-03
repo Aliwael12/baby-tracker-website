@@ -36,6 +36,7 @@ export async function PATCH(
   const {
     comments,
     diaperStatus,
+    amountMl,
     startTime,
     endTime,
     weightKg,
@@ -47,6 +48,7 @@ export async function PATCH(
   } = body as {
     comments?: string | null;
     diaperStatus?: string | null;
+    amountMl?: number | string | null;
     startTime?: string | null;
     endTime?: string | null;
     weightKg?: number | string | null;
@@ -99,6 +101,26 @@ export async function PATCH(
   const existingForDuration = await prisma.activityLog.findUnique({ where: { id: numId } });
   if (!existingForDuration) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (amountMl !== undefined) {
+    if (existingForDuration.type !== "pump") {
+      return NextResponse.json(
+        { error: "amountMl can only be updated on pump logs" },
+        { status: 400 }
+      );
+    }
+    const ml =
+      amountMl !== null && amountMl !== ""
+        ? parseFloat(String(amountMl))
+        : NaN;
+    if (isNaN(ml) || ml <= 0) {
+      return NextResponse.json(
+        { error: "amountMl (a positive number) is required for pump" },
+        { status: 400 }
+      );
+    }
+    data.amountMl = ml;
   }
 
   if (weightKg !== undefined || heightCm !== undefined) {

@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
   const {
     type,
     side,
+    amountMl,
     diaperStatus,
     weightKg,
     heightCm,
@@ -52,11 +53,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid activity type" }, { status: 400 });
   }
 
-  if ((type === "pump" || type === "feed") && !side) {
+  if (type === "feed" && !side) {
     return NextResponse.json(
-      { error: "side (left/right) is required for pump and feed" },
+      { error: "side (left/right) is required for feed" },
       { status: 400 }
     );
+  }
+
+  if (type === "pump") {
+    const ml =
+      amountMl !== undefined && amountMl !== null && amountMl !== ""
+        ? parseFloat(String(amountMl))
+        : NaN;
+    if (isNaN(ml) || ml <= 0) {
+      return NextResponse.json(
+        { error: "amountMl (a positive number) is required for pump" },
+        { status: 400 }
+      );
+    }
   }
 
   const validDiaperStatuses = ["empty", "wet", "dirty", "wet_and_dirty"];
@@ -110,6 +124,13 @@ export async function POST(req: NextRequest) {
     data: {
       type,
       side: side || null,
+      amountMl:
+        type === "pump" &&
+        amountMl !== undefined &&
+        amountMl !== null &&
+        amountMl !== ""
+          ? parseFloat(String(amountMl))
+          : null,
       diaperStatus: type === "diaper" ? (diaperStatus || null) : null,
       weightKg: type === "growth" && weightKg ? parseFloat(weightKg) : null,
       heightCm: type === "growth" && heightCm ? parseFloat(heightCm) : null,

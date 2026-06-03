@@ -39,6 +39,7 @@ function toLocalTimeStr(d: Date): string {
 export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryProps) {
   const [activityType, setActivityType] = useState<ActivityType | null>(null);
   const [side, setSide] = useState<"left" | "right" | null>(null);
+  const [amountMl, setAmountMl] = useState("");
   const [diaperStatus, setDiaperStatus] = useState<string | null>(null);
   const [dateStr, setDateStr] = useState(toLocalDateStr(new Date()));
   const [startTimeStr, setStartTimeStr] = useState(toLocalTimeStr(new Date()));
@@ -46,14 +47,20 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
   const [comments, setComments] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const needsSide = activityType === "pump" || activityType === "feed";
+  const needsSide = activityType === "feed";
+  const needsAmount = activityType === "pump";
   const needsDiaperStatus = activityType === "diaper";
-  const isDiaper = activityType === "diaper";
+  // Pump is an instant log like diaper (no duration, start === end).
+  const isInstant = activityType === "diaper" || activityType === "pump";
+
+  const amountMlValue = needsAmount ? parseFloat(amountMl) : NaN;
+  const amountMlValid = !isNaN(amountMlValue) && amountMlValue > 0;
 
   const canSave =
     activityType &&
     startTimeStr &&
     (!needsSide || side) &&
+    (!needsAmount || amountMlValid) &&
     (!needsDiaperStatus || diaperStatus);
 
   const handleSave = async () => {
@@ -61,11 +68,12 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
     setSaving(true);
 
     const start = new Date(`${dateStr}T${startTimeStr}`);
-    const end = isDiaper ? start : new Date(`${dateStr}T${endTimeStr}`);
+    const end = isInstant ? start : new Date(`${dateStr}T${endTimeStr}`);
 
     const payload = {
       type: activityType,
       side: needsSide ? side : null,
+      amountMl: needsAmount ? amountMlValue : null,
       diaperStatus: needsDiaperStatus ? diaperStatus : null,
       startTime: start.toISOString(),
       endTime: end.toISOString(),
@@ -106,7 +114,8 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
               key={opt.value}
               onClick={() => {
                 setActivityType(opt.value);
-                if (opt.value !== "pump" && opt.value !== "feed") setSide(null);
+                if (opt.value !== "feed") setSide(null);
+                if (opt.value !== "pump") setAmountMl("");
                 if (opt.value !== "diaper") setDiaperStatus(null);
               }}
               className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
@@ -141,6 +150,25 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
                 </button>
               ))}
             </div>
+          </>
+        )}
+
+        {/* Amount (pump only) */}
+        {needsAmount && (
+          <>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Amount (ml)
+            </label>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="1"
+              min="0"
+              value={amountMl}
+              onChange={(e) => setAmountMl(e.target.value)}
+              placeholder="e.g. 120"
+              className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none transition-colors focus:border-baby-400 placeholder:text-baby-300"
+            />
           </>
         )}
 
@@ -181,7 +209,7 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
         />
 
         {/* Time */}
-        {isDiaper ? (
+        {isInstant ? (
           <>
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Time
@@ -191,7 +219,7 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
               value={startTimeStr}
               onChange={(e) => {
                 setStartTimeStr(e.target.value);
-                // keep end in sync for UI consistency (diaper saves start=end)
+                // keep end in sync for UI consistency (instant logs save start=end)
                 setEndTimeStr(e.target.value);
               }}
               className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"

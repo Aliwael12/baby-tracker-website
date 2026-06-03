@@ -16,8 +16,9 @@ const ACTIVITY_CONFIG: Record<
   ActivityType,
   { label: string; icon: string; hasSide: boolean; hasTimer: boolean }
 > = {
-  // Pump is an instant log (like shower): no timer/elapsed UI.
-  pump: { label: "Pump", icon: "🍼", hasSide: true, hasTimer: false },
+  // Pump is an instant log (like shower): no timer/elapsed UI. It prompts for
+  // an amount (ml) on tap rather than recording a side.
+  pump: { label: "Pump", icon: "🍼", hasSide: false, hasTimer: false },
   feed: { label: "Feed", icon: "🤱", hasSide: true, hasTimer: true },
   sleep: { label: "Sleep", icon: "😴", hasSide: false, hasTimer: true },
   diaper: { label: "Diaper", icon: "🩲", hasSide: false, hasTimer: false },
@@ -87,6 +88,8 @@ export default function ActivityTimerCard({
   const [diaperStatus, setDiaperStatus] = useState<string | null>(null);
   const [showComment, setShowComment] = useState(false);
   const [comment, setComment] = useState("");
+  const [showMlPrompt, setShowMlPrompt] = useState(false);
+  const [amountMl, setAmountMl] = useState("");
   const [saving, setSaving] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const endTimeRef = useRef<Date | null>(null);
@@ -263,29 +266,12 @@ export default function ActivityTimerCard({
         return;
       }
       if (type === "pump") {
-        if (saving) return;
-        setSaving(true);
-        try {
-          await fetch("/api/logs", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type,
-              side: side || null,
-              diaperStatus: null,
-              startTime: now.toISOString(),
-              endTime: now.toISOString(),
-              comments: null,
-              enteredByName: userName,
-              pauseTimeline: null,
-            }),
-          });
-          onLogSaved();
-        } catch {
-          // ignore
-        } finally {
-          setSaving(false);
-        }
+        // Pump is an instant log with no timer, but we prompt for an amount
+        // (ml) before saving instead of recording a side.
+        setStartTime(now);
+        endTimeRef.current = now;
+        setAmountMl("");
+        setShowMlPrompt(true);
         return;
       }
       setActiveSide(side || null);
@@ -349,6 +335,40 @@ export default function ActivityTimerCard({
     }
   };
 
+  const handleSavePump = async () => {
+    if (saving) return;
+    const ml = parseFloat(amountMl);
+    if (isNaN(ml) || ml <= 0) return;
+    setSaving(true);
+    const now = startTime ?? new Date();
+    try {
+      await fetch("/api/logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "pump",
+          side: null,
+          amountMl: ml,
+          diaperStatus: null,
+          startTime: now.toISOString(),
+          endTime: now.toISOString(),
+          comments: null,
+          enteredByName: userName,
+          pauseTimeline: null,
+        }),
+      });
+      onLogSaved();
+    } catch {
+      // ignore
+    } finally {
+      setShowMlPrompt(false);
+      setAmountMl("");
+      setStartTime(null);
+      setSaving(false);
+      endTimeRef.current = null;
+    }
+  };
+
   const handleCancel = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setStartTime(null);
@@ -360,13 +380,16 @@ export default function ActivityTimerCard({
     setDiaperStatus(null);
     setShowComment(false);
     setComment("");
+    setShowMlPrompt(false);
+    setAmountMl("");
     endTimeRef.current = null;
     originalStartTimeRef.current = null;
     pauseTimelineRef.current = [];
     clearTimerState(type);
   };
 
-  const isActive = !!startTime && !showComment && !showDiaperStatus;
+  const isActive =
+    !!startTime && !showComment && !showDiaperStatus && !showMlPrompt;
 
   // In square (grid) mode the resting trigger fills a square cell; transient
   // states (diaper status / note form) break out to full width to stay usable.
@@ -385,6 +408,58 @@ export default function ActivityTimerCard({
     { value: "dirty", icon: "💩", label: "Dirty" },
     { value: "wet_and_dirty", icon: "💧💩", label: "Wet & Dirty" },
   ];
+
+  if (showMlPrompt) {
+    const ml = parseFloat(amountMl);
+    const canSavePump = !isNaN(ml) && ml > 0;
+    return (
+      <div className={expandedCardClass}>
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-lg font-semibold text-gray-700">
+            {config.icon} {config.label}
+          </span>
+          <button onClick={handleCancel} className="text-xs text-gray-400">
+            Cancel
+          </button>
+        </div>
+        <p className="mb-3 text-center text-sm text-gray-500">How many ml?</p>
+        <div className="relative mb-3">
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="1"
+            value={amountMl}
+            onChange={(e) => setAmountMl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && canSavePump) handleSavePump();
+            }}
+            placeholder="e.g. 120"
+            autoFocus
+            className="w-full rounded-xl border border-baby-200 bg-baby-50 px-3 py-2 pr-10 text-sm outline-none transition-colors focus:border-baby-400 placeholder:text-baby-300"
+          />
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-baby-400">
+            ml
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleCancel}
+            className="flex-1 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-500 transition-all active:scale-[0.97]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSavePump}
+            disabled={saving || !canSavePump}
+            className="flex-1 rounded-xl bg-baby-400 py-2 text-sm font-semibold text-white shadow transition-all active:scale-[0.97] disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (showDiaperStatus) {
     return (

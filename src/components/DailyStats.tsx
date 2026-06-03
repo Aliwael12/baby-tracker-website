@@ -5,6 +5,7 @@ import { useMemo } from "react";
 interface LogEntry {
   id: number;
   type: string;
+  amountMl: number | null;
   durationMinutes: number | null;
   startTime: string;
 }
@@ -37,9 +38,14 @@ export default function DailyStats({ logs }: DailyStatsProps) {
     const count = (type: string) =>
       todayLogs.filter((l) => l.type === type).length;
 
+    const totalMl = (type: string) =>
+      todayLogs
+        .filter((l) => l.type === type && l.amountMl)
+        .reduce((sum, l) => sum + (l.amountMl ?? 0), 0);
+
     return {
       feedTime: totalTime("feed"),
-      pumpCount: count("pump"),
+      pumpMl: totalMl("pump"),
       sleepTime: totalTime("sleep"),
       diaperCount: count("diaper"),
       showerCount: count("shower"),
@@ -49,7 +55,7 @@ export default function DailyStats({ logs }: DailyStatsProps) {
 
   const cards = [
     { icon: "🤱", label: "Feeding", value: formatMinutes(stats.feedTime), sub: "total today" },
-    { icon: "🍼", label: "Pumping", value: String(stats.pumpCount), sub: "times today" },
+    { icon: "🍼", label: "Pumping", value: `${Math.round(stats.pumpMl).toLocaleString()} ml`, sub: "total today" },
     { icon: "😴", label: "Sleep", value: formatMinutes(stats.sleepTime), sub: "total today" },
     { icon: "🩲", label: "Diapers", value: String(stats.diaperCount), sub: "changed today" },
     { icon: "🚿", label: "Showers", value: String(stats.showerCount), sub: "taken today" },
