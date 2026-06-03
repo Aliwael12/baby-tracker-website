@@ -356,13 +356,14 @@ export default function HistoryPage() {
                                 )}
                               </div>
                               <PauseTimelineIndicator pauseTimelineJson={log.pauseTimelineJson} />
-                              {log.type === "pump" && log.amountMl !== null && (
-                                <div className="mt-0.5">
-                                  <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
-                                    🍼 {log.amountMl} ml
-                                  </span>
-                                </div>
-                              )}
+                              {(log.type === "pump" || log.type === "feed") &&
+                                log.amountMl !== null && (
+                                  <div className="mt-0.5">
+                                    <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                                      🍼 {log.amountMl} ml
+                                    </span>
+                                  </div>
+                                )}
                               {log.type === "diaper" && log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus] && (
                                 <div className="mt-0.5">
                                   <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">

@@ -158,6 +158,17 @@ function EditLogModal({
   onClose: () => void;
   onSaved?: () => void | Promise<void>;
 }) {
+  // A bottle feed is a feed measured in ml (no side, no nursing duration). It
+  // edits like a pump log: a single time + an amount, not a start/end range.
+  const isBottleFeed = log.type === "feed" && log.amountMl !== null;
+  const usesSingleTime =
+    log.type === "diaper" ||
+    log.type === "growth" ||
+    log.type === "health" ||
+    log.type === "pump" ||
+    isBottleFeed;
+  const editsAmountMl = log.type === "pump" || isBottleFeed;
+
   // Initialized from the log prop (component is keyed by log.id, so it
   // remounts per log) — no effect needed to sync derived state.
   const [editComments, setEditComments] = useState(log.comments ?? "");
@@ -205,7 +216,9 @@ function EditLogModal({
       : ""
   );
   const [editAmountMl, setEditAmountMl] = useState(() =>
-    log.type === "pump" && log.amountMl !== null && log.amountMl !== undefined
+    (log.type === "pump" || log.type === "feed") &&
+    log.amountMl !== null &&
+    log.amountMl !== undefined
       ? String(log.amountMl)
       : ""
   );
@@ -219,7 +232,7 @@ function EditLogModal({
       payload.diaperStatus = editDiaperStatus;
     }
 
-    if (log.type === "pump") {
+    if (editsAmountMl) {
       const ml = editAmountMl.trim() ? parseFloat(editAmountMl) : NaN;
       if (isNaN(ml) || ml <= 0) return;
       payload.amountMl = ml;
@@ -252,12 +265,7 @@ function EditLogModal({
       const newStart = new Date(`${editDateStr}T${editStartTimeStr}`);
       payload.startTime = newStart.toISOString();
 
-      if (
-        log.type === "diaper" ||
-        log.type === "growth" ||
-        log.type === "health" ||
-        log.type === "pump"
-      ) {
+      if (usesSingleTime) {
         payload.endTime = newStart.toISOString();
       } else if (editEndTimeStr) {
         const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
@@ -314,10 +322,7 @@ function EditLogModal({
           className="mb-3 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none focus:border-baby-400"
         />
 
-        {log.type === "diaper" ||
-        log.type === "growth" ||
-        log.type === "health" ||
-        log.type === "pump" ? (
+        {usesSingleTime ? (
           <>
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Time
@@ -388,7 +393,7 @@ function EditLogModal({
           </>
         )}
 
-        {log.type === "pump" && (
+        {editsAmountMl && (
           <>
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Amount (ml)
@@ -621,13 +626,14 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                         </span>
                       </div>
                     )}
-                    {log.type === "pump" && log.amountMl !== null && (
-                      <div className="mt-1">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
-                          🍼 {log.amountMl} ml
-                        </span>
-                      </div>
-                    )}
+                    {(log.type === "pump" || log.type === "feed") &&
+                      log.amountMl !== null && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                            🍼 {log.amountMl} ml
+                          </span>
+                        </div>
+                      )}
                     {log.type === "diaper" && log.diaperStatus && DIAPER_STATUS_META[log.diaperStatus] && (
                       <div className="mt-1">
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">

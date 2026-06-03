@@ -104,9 +104,12 @@ export async function PATCH(
   }
 
   if (amountMl !== undefined) {
-    if (existingForDuration.type !== "pump") {
+    if (
+      existingForDuration.type !== "pump" &&
+      existingForDuration.type !== "feed"
+    ) {
       return NextResponse.json(
-        { error: "amountMl can only be updated on pump logs" },
+        { error: "amountMl can only be updated on pump or feed logs" },
         { status: 400 }
       );
     }
@@ -116,7 +119,7 @@ export async function PATCH(
         : NaN;
     if (isNaN(ml) || ml <= 0) {
       return NextResponse.json(
-        { error: "amountMl (a positive number) is required for pump" },
+        { error: "amountMl must be a positive number" },
         { status: 400 }
       );
     }

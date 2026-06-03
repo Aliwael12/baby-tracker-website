@@ -16,8 +16,9 @@ const ACTIVITY_CONFIG: Record<
   ActivityType,
   { label: string; icon: string; hasSide: boolean; hasTimer: boolean }
 > = {
-  // Pump is an instant log (like shower): no timer/elapsed UI. It prompts for
-  // an amount (ml) on tap rather than recording a side.
+  // Pump is no longer offered as its own card (bottle feeds replaced it), but
+  // the entry stays so historical pump logs still resolve a label/icon and the
+  // ActivityType record remains exhaustive.
   pump: { label: "Pump", icon: "🍼", hasSide: false, hasTimer: false },
   feed: { label: "Feed", icon: "🤱", hasSide: true, hasTimer: true },
   sleep: { label: "Sleep", icon: "😴", hasSide: false, hasTimer: true },
@@ -239,45 +240,30 @@ export default function ActivityTimerCard({
         setShowDiaperStatus(true);
         return;
       }
-      if (type === "shower" || type === "vitamin") {
-        if (saving) return;
-        setSaving(true);
-        try {
-          await fetch("/api/logs", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type,
-              side: null,
-              diaperStatus: null,
-              startTime: now.toISOString(),
-              endTime: now.toISOString(),
-              comments: null,
-              enteredByName: userName,
-              pauseTimeline: null,
-            }),
-          });
-          onLogSaved();
-        } catch {
-          // ignore
-        } finally {
-          setSaving(false);
-        }
-        return;
+      // shower / vitamin: a one-tap log with no side, timer, or follow-up.
+      if (saving) return;
+      setSaving(true);
+      try {
+        await fetch("/api/logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type,
+            side: null,
+            diaperStatus: null,
+            startTime: now.toISOString(),
+            endTime: now.toISOString(),
+            comments: null,
+            enteredByName: userName,
+            pauseTimeline: null,
+          }),
+        });
+        onLogSaved();
+      } catch {
+        // ignore
+      } finally {
+        setSaving(false);
       }
-      if (type === "pump") {
-        // Pump is an instant log with no timer, but we prompt for an amount
-        // (ml) before saving instead of recording a side.
-        setStartTime(now);
-        endTimeRef.current = now;
-        setAmountMl("");
-        setShowMlPrompt(true);
-        return;
-      }
-      setActiveSide(side || null);
-      setStartTime(now);
-      endTimeRef.current = now;
-      setShowComment(true);
     },
     [type, saving, userName, onLogSaved]
   );
@@ -335,7 +321,7 @@ export default function ActivityTimerCard({
     }
   };
 
-  const handleSavePump = async () => {
+  const handleSaveMl = async () => {
     if (saving) return;
     const ml = parseFloat(amountMl);
     if (isNaN(ml) || ml <= 0) return;
@@ -346,7 +332,7 @@ export default function ActivityTimerCard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: "pump",
+          type,
           side: null,
           amountMl: ml,
           diaperStatus: null,
@@ -368,6 +354,17 @@ export default function ActivityTimerCard({
       endTimeRef.current = null;
     }
   };
+
+  // Bottle feed: an instant feed log measured in ml (no side, no timer). Tapping
+  // opens the same "How many ml?" prompt the pump used to use.
+  const handleBottle = useCallback(() => {
+    const now = new Date();
+    setStartTime(now);
+    endTimeRef.current = now;
+    setActiveSide(null);
+    setAmountMl("");
+    setShowMlPrompt(true);
+  }, []);
 
   const handleCancel = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -411,7 +408,7 @@ export default function ActivityTimerCard({
 
   if (showMlPrompt) {
     const ml = parseFloat(amountMl);
-    const canSavePump = !isNaN(ml) && ml > 0;
+    const canSaveMl = !isNaN(ml) && ml > 0;
     return (
       <div className={expandedCardClass}>
         <div className="mb-3 flex items-center justify-between">
@@ -432,7 +429,7 @@ export default function ActivityTimerCard({
             value={amountMl}
             onChange={(e) => setAmountMl(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && canSavePump) handleSavePump();
+              if (e.key === "Enter" && canSaveMl) handleSaveMl();
             }}
             placeholder="e.g. 120"
             autoFocus
@@ -450,8 +447,8 @@ export default function ActivityTimerCard({
             Cancel
           </button>
           <button
-            onClick={handleSavePump}
-            disabled={saving || !canSavePump}
+            onClick={handleSaveMl}
+            disabled={saving || !canSaveMl}
             className="flex-1 rounded-xl bg-baby-400 py-2 text-sm font-semibold text-white shadow transition-all active:scale-[0.97] disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
@@ -537,34 +534,8 @@ export default function ActivityTimerCard({
   }
 
   if (!config.hasTimer) {
-    // Instant logs (shower/diaper/pump).
-    if (config.hasSide) {
-      // Pump needs side selection but does not use a timer.
-      return (
-        <div className="rounded-2xl bg-white p-4 shadow-md">
-          <div className="mb-2 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
-            {config.icon} {config.label}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleInstantLog("left")}
-              disabled={saving}
-              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-3 text-center text-sm font-semibold text-baby-600 transition-all active:scale-[0.95] disabled:opacity-60"
-            >
-              🫲 L
-            </button>
-            <button
-              onClick={() => handleInstantLog("right")}
-              disabled={saving}
-              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-3 text-center text-sm font-semibold text-baby-600 transition-all active:scale-[0.95] disabled:opacity-60"
-            >
-              🫱 R
-            </button>
-          </div>
-        </div>
-      );
-    }
-
+    // Instant one-tap logs (shower / diaper). Diaper opens a status picker
+    // first; shower/vitamin save immediately.
     return (
       <div className={restingCardClass}>
         <button
@@ -633,6 +604,13 @@ export default function ActivityTimerCard({
             >
               <span className="block text-xl">🫱</span>
               <span className="mt-0.5 block text-xs font-semibold text-baby-600">R</span>
+            </button>
+            <button
+              onClick={handleBottle}
+              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
+            >
+              <span className="block text-xl">🍼</span>
+              <span className="mt-0.5 block text-xs font-semibold text-baby-600">Bottle</span>
             </button>
           </div>
         )}

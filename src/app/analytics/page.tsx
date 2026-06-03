@@ -442,6 +442,11 @@ export default function AnalyticsPage() {
                                   {side}
                                 </span>
                               )}
+                              {log.amountMl !== null && (
+                                <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">
+                                  🍼 {log.amountMl} ml
+                                </span>
+                              )}
                               {dur && <span className="text-gray-500">{dur}</span>}
                             </div>
                           );

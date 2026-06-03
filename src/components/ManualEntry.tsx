@@ -11,7 +11,6 @@ interface ManualEntryProps {
 }
 
 const ACTIVITY_OPTIONS: { value: ActivityType; icon: string; label: string }[] = [
-  { value: "pump", icon: "🍼", label: "Pump" },
   { value: "feed", icon: "🤱", label: "Feed" },
   { value: "sleep", icon: "😴", label: "Sleep" },
   { value: "diaper", icon: "🩲", label: "Diaper" },
@@ -47,20 +46,25 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
   const [comments, setComments] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const needsSide = activityType === "feed";
-  const needsAmount = activityType === "pump";
+  const isFeed = activityType === "feed";
   const needsDiaperStatus = activityType === "diaper";
-  // Pump is an instant log like diaper (no duration, start === end).
-  const isInstant = activityType === "diaper" || activityType === "pump";
 
-  const amountMlValue = needsAmount ? parseFloat(amountMl) : NaN;
+  // A feed can be a nursing session (a side, with a duration) or a bottle feed
+  // (an amount in ml, logged instantly). The amount field is offered for feeds.
+  const amountMlValue = isFeed ? parseFloat(amountMl) : NaN;
   const amountMlValid = !isNaN(amountMlValue) && amountMlValue > 0;
+  const isBottleFeed = isFeed && amountMlValid && !side;
+
+  // Diaper is always instant; a bottle feed (ml, no side) is instant too.
+  const isInstant = activityType === "diaper" || isBottleFeed;
+
+  // A feed needs either a side or a valid amount; one is enough.
+  const feedValid = !isFeed || !!side || amountMlValid;
 
   const canSave =
     activityType &&
     startTimeStr &&
-    (!needsSide || side) &&
-    (!needsAmount || amountMlValid) &&
+    feedValid &&
     (!needsDiaperStatus || diaperStatus);
 
   const handleSave = async () => {
@@ -72,8 +76,8 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
 
     const payload = {
       type: activityType,
-      side: needsSide ? side : null,
-      amountMl: needsAmount ? amountMlValue : null,
+      side: isFeed ? side : null,
+      amountMl: isFeed && amountMlValid ? amountMlValue : null,
       diaperStatus: needsDiaperStatus ? diaperStatus : null,
       startTime: start.toISOString(),
       endTime: end.toISOString(),
@@ -114,8 +118,10 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
               key={opt.value}
               onClick={() => {
                 setActivityType(opt.value);
-                if (opt.value !== "feed") setSide(null);
-                if (opt.value !== "pump") setAmountMl("");
+                if (opt.value !== "feed") {
+                  setSide(null);
+                  setAmountMl("");
+                }
                 if (opt.value !== "diaper") setDiaperStatus(null);
               }}
               className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
@@ -129,17 +135,22 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
           ))}
         </div>
 
-        {/* Side (pump/feed only) */}
-        {needsSide && (
+        {/* Feed: nursing side OR bottle amount. Either one is enough. */}
+        {isFeed && (
           <>
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Side
+              Side (nursing)
             </label>
             <div className="mb-4 flex gap-2">
               {(["left", "right"] as const).map((s) => (
                 <button
                   key={s}
-                  onClick={() => setSide(s)}
+                  onClick={() => {
+                    // Picking a side switches to a nursing feed: clear any
+                    // bottle amount so the two modes don't mix.
+                    setSide(side === s ? null : s);
+                    if (side !== s) setAmountMl("");
+                  }}
                   className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all ${
                     side === s
                       ? "bg-baby-400 text-white shadow-sm"
@@ -150,14 +161,9 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
                 </button>
               ))}
             </div>
-          </>
-        )}
 
-        {/* Amount (pump only) */}
-        {needsAmount && (
-          <>
             <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Amount (ml)
+              Bottle amount (ml)
             </label>
             <input
               type="number"
@@ -165,7 +171,11 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
               step="1"
               min="0"
               value={amountMl}
-              onChange={(e) => setAmountMl(e.target.value)}
+              onChange={(e) => {
+                setAmountMl(e.target.value);
+                // Entering an amount switches to a bottle feed.
+                if (e.target.value) setSide(null);
+              }}
               placeholder="e.g. 120"
               className="mb-4 w-full rounded-xl border-2 border-baby-200 bg-baby-50 px-3 py-2.5 text-sm outline-none transition-colors focus:border-baby-400 placeholder:text-baby-300"
             />

@@ -53,21 +53,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid activity type" }, { status: 400 });
   }
 
-  if (type === "feed" && !side) {
+  // A feed is either a nursing session (has a side) or a bottle feed measured
+  // in ml. One of the two must be present.
+  const hasMl =
+    amountMl !== undefined && amountMl !== null && amountMl !== "";
+  if (type === "feed" && !side && !hasMl) {
     return NextResponse.json(
-      { error: "side (left/right) is required for feed" },
+      { error: "feed requires either a side (left/right) or amountMl" },
       { status: 400 }
     );
   }
 
-  if (type === "pump") {
-    const ml =
-      amountMl !== undefined && amountMl !== null && amountMl !== ""
-        ? parseFloat(String(amountMl))
-        : NaN;
+  if ((type === "pump" || (type === "feed" && hasMl))) {
+    const ml = hasMl ? parseFloat(String(amountMl)) : NaN;
     if (isNaN(ml) || ml <= 0) {
       return NextResponse.json(
-        { error: "amountMl (a positive number) is required for pump" },
+        { error: "amountMl must be a positive number" },
         { status: 400 }
       );
     }
@@ -125,10 +126,7 @@ export async function POST(req: NextRequest) {
       type,
       side: side || null,
       amountMl:
-        type === "pump" &&
-        amountMl !== undefined &&
-        amountMl !== null &&
-        amountMl !== ""
+        (type === "pump" || type === "feed") && hasMl
           ? parseFloat(String(amountMl))
           : null,
       diaperStatus: type === "diaper" ? (diaperStatus || null) : null,
