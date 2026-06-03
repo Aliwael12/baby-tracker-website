@@ -590,27 +590,29 @@ export default function ActivityTimerCard({
             </button>
           </div>
         ) : (
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleStart("left")}
-              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
-            >
-              <span className="block text-xl">🫲</span>
-              <span className="mt-0.5 block text-xs font-semibold text-baby-600">L</span>
-            </button>
-            <button
-              onClick={() => handleStart("right")}
-              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
-            >
-              <span className="block text-xl">🫱</span>
-              <span className="mt-0.5 block text-xs font-semibold text-baby-600">R</span>
-            </button>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleStart("left")}
+                className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
+              >
+                <span className="block text-xl">🫲</span>
+                <span className="mt-0.5 block text-xs font-semibold text-baby-600">L</span>
+              </button>
+              <button
+                onClick={() => handleStart("right")}
+                className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
+              >
+                <span className="block text-xl">🫱</span>
+                <span className="mt-0.5 block text-xs font-semibold text-baby-600">R</span>
+              </button>
+            </div>
             <button
               onClick={handleBottle}
-              className="flex-1 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-baby-200 bg-baby-50 py-2.5 text-center transition-all active:scale-[0.95]"
             >
-              <span className="block text-xl">🍼</span>
-              <span className="mt-0.5 block text-xs font-semibold text-baby-600">Bottle</span>
+              <span className="text-xl">🍼</span>
+              <span className="text-xs font-semibold text-baby-600">Bottle</span>
             </button>
           </div>
         )}
