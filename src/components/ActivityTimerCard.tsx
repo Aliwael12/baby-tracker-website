@@ -230,6 +230,66 @@ export default function ActivityTimerCard({
     });
   }, [paused, type, activeSide]);
 
+  // Nudge the running timer's start time by deltaSeconds (negative = earlier,
+  // i.e. "add" elapsed; positive = later, i.e. "subtract"). Lets the user
+  // backdate a start they tapped late — e.g. baby fell asleep 10 min ago.
+  // Clamps so elapsed can't go below 0 (start can't pass "now").
+  const adjustStart = useCallback(
+    (deltaSeconds: number) => {
+      if (!startTime) return;
+      const original = originalStartTimeRef.current || startTime;
+
+      if (paused) {
+        // Paused: elapsed is frozen in pausedElapsedRef. Shift it directly,
+        // clamped at 0, and move the saved start to match.
+        const nextElapsed = Math.max(0, pausedElapsedRef.current + deltaSeconds);
+        const applied = nextElapsed - pausedElapsedRef.current;
+        if (applied === 0) return;
+        pausedElapsedRef.current = nextElapsed;
+        setElapsed(nextElapsed);
+        const nextOriginal = new Date(original.getTime() - applied * 1000);
+        originalStartTimeRef.current = nextOriginal;
+        saveTimerState(type, {
+          originalStartTimeISO: nextOriginal.toISOString(),
+          startTimeISO: startTime.toISOString(),
+          pausedElapsed: nextElapsed,
+          paused: true,
+          activeSide,
+          pausedAtISO: (endTimeRef.current ?? new Date()).toISOString(),
+          timeline: pauseTimelineRef.current,
+        });
+        return;
+      }
+
+      // Running: total elapsed = pausedElapsed + (now - startTime). Shift both
+      // the running segment start and the saved original by the same amount,
+      // clamping so the total can't drop below 0.
+      const currentElapsed =
+        pausedElapsedRef.current +
+        Math.floor((Date.now() - startTime.getTime()) / 1000);
+      const applied = Math.max(0, currentElapsed + deltaSeconds) - currentElapsed;
+      if (applied === 0) return;
+      const nextStart = new Date(startTime.getTime() - applied * 1000);
+      const nextOriginal = new Date(original.getTime() - applied * 1000);
+      setStartTime(nextStart);
+      originalStartTimeRef.current = nextOriginal;
+      setElapsed(
+        pausedElapsedRef.current +
+          Math.floor((Date.now() - nextStart.getTime()) / 1000)
+      );
+      saveTimerState(type, {
+        originalStartTimeISO: nextOriginal.toISOString(),
+        startTimeISO: nextStart.toISOString(),
+        pausedElapsed: pausedElapsedRef.current,
+        paused: false,
+        activeSide,
+        pausedAtISO: null,
+        timeline: pauseTimelineRef.current,
+      });
+    },
+    [startTime, paused, type, activeSide]
+  );
+
   const handleInstantLog = useCallback(
     async (side?: "left" | "right") => {
       const now = new Date();
@@ -406,6 +466,30 @@ export default function ActivityTimerCard({
     { value: "wet_and_dirty", icon: "💧💩", label: "Wet & Dirty" },
   ];
 
+  // ±5m quick-adjust for the running/paused timer, so a late tap can backdate
+  // the start (or correct an overshoot). "+5m" pushes the start 5 min earlier
+  // (more elapsed); "−5m" pulls it later (less elapsed), disabled near zero.
+  const startAdjuster = (
+    <div className="mb-2 flex items-center justify-center gap-2">
+      <button
+        onClick={() => adjustStart(-300)}
+        disabled={elapsed < 300}
+        className="rounded-full border border-baby-200 bg-baby-50 px-3 py-1 text-xs font-semibold text-baby-600 transition-all active:scale-[0.95] disabled:opacity-40"
+        aria-label="Remove 5 minutes from the start"
+      >
+        −5m
+      </button>
+      <span className="text-[11px] font-medium text-gray-400">adjust start</span>
+      <button
+        onClick={() => adjustStart(300)}
+        className="rounded-full border border-baby-200 bg-baby-50 px-3 py-1 text-xs font-semibold text-baby-600 transition-all active:scale-[0.95]"
+        aria-label="Add 5 minutes to the start"
+      >
+        +5m
+      </button>
+    </div>
+  );
+
   if (showMlPrompt) {
     const ml = parseFloat(amountMl);
     const canSaveMl = !isNaN(ml) && ml > 0;
@@ -565,6 +649,7 @@ export default function ActivityTimerCard({
             </span>
           </div>
         )}
+        {isActive && startAdjuster}
         {isActive ? (
           <div className="flex gap-2">
             {paused ? (
@@ -629,6 +714,7 @@ export default function ActivityTimerCard({
               {formatTimer(elapsed)} {paused ? "(paused)" : ""}
             </span>
           </div>
+          {startAdjuster}
           <div className="flex gap-2">
             {paused ? (
               <button
