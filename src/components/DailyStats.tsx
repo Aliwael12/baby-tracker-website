@@ -30,9 +30,11 @@ export default function DailyStats({ logs }: DailyStatsProps) {
       (l) => new Date(l.startTime).toDateString() === todayStr
     );
 
+    // Only sum positive durations so a corrupt log with end-before-start
+    // (negative durationMinutes) can't drag the day's total below zero.
     const totalTime = (type: string) =>
       todayLogs
-        .filter((l) => l.type === type && l.durationMinutes)
+        .filter((l) => l.type === type && (l.durationMinutes ?? 0) > 0)
         .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
 
     const count = (type: string) =>

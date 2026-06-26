@@ -217,6 +217,13 @@ export async function PATCH(
     const finalStart = (data.startTime as Date) ?? existing.startTime;
     const finalEnd = data.endTime === null ? null : (data.endTime as Date | undefined) ?? existing.endTime;
     if (finalStart && finalEnd) {
+      // A backwards range yields a negative duration, which corrupts day totals.
+      if (finalEnd.getTime() < finalStart.getTime()) {
+        return NextResponse.json(
+          { error: "endTime cannot be before startTime" },
+          { status: 400 }
+        );
+      }
       data.durationMinutes = (finalEnd.getTime() - finalStart.getTime()) / 60000;
     }
   }

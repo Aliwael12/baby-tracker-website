@@ -106,9 +106,12 @@ function groupByDay(logs: LogEntry[]): DayGroup[] {
 
   const result: DayGroup[] = [];
   for (const [dateKey, dayLogs] of groups) {
+    // Only sum positive durations: a corrupt log with end-before-start has a
+    // negative durationMinutes and must not drag the day's total below zero
+    // (which would hide the stat badge entirely).
     const totalTime = (type: string) =>
       dayLogs
-        .filter((l) => l.type === type && l.durationMinutes)
+        .filter((l) => l.type === type && (l.durationMinutes ?? 0) > 0)
         .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
     const count = (type: string) => dayLogs.filter((l) => l.type === type).length;
     const totalMl = (type: string) =>

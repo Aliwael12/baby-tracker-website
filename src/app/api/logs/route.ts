@@ -109,6 +109,21 @@ export async function POST(req: NextRequest) {
 
   const start = new Date(startTime);
   const end = endTime ? new Date(endTime) : null;
+
+  if (isNaN(start.getTime())) {
+    return NextResponse.json({ error: "Invalid startTime" }, { status: 400 });
+  }
+  if (end && isNaN(end.getTime())) {
+    return NextResponse.json({ error: "Invalid endTime" }, { status: 400 });
+  }
+  // A backwards range yields a negative duration, which corrupts day totals.
+  if (end && end.getTime() < start.getTime()) {
+    return NextResponse.json(
+      { error: "endTime cannot be before startTime" },
+      { status: 400 }
+    );
+  }
+
   const durationMinutes =
     end ? (end.getTime() - start.getTime()) / 60000 : null;
 
