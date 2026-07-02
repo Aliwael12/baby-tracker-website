@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     "diaper",
     "shower",
     "vitamin",
+    "nailcut",
     "growth",
     "health",
   ];

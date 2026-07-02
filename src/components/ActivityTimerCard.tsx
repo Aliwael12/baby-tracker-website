@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-export type ActivityType = "pump" | "feed" | "sleep" | "diaper" | "shower" | "vitamin";
+export type ActivityType = "pump" | "feed" | "sleep" | "diaper" | "shower" | "vitamin" | "nailcut";
 
 interface ActivityTimerCardProps {
   type: ActivityType;
@@ -26,6 +26,8 @@ const ACTIVITY_CONFIG: Record<
   shower: { label: "Shower", icon: "🚿", hasSide: false, hasTimer: false },
   // Vitamin is an instant log (like shower): no timer/elapsed UI.
   vitamin: { label: "Vitamin", icon: "💊", hasSide: false, hasTimer: false },
+  // Nail Cut is an instant log (like shower/vitamin): no timer/elapsed UI.
+  nailcut: { label: "Nail Cut", icon: "💅", hasSide: false, hasTimer: false },
 };
 
 function formatTimer(seconds: number): string {
@@ -300,7 +302,7 @@ export default function ActivityTimerCard({
         setShowDiaperStatus(true);
         return;
       }
-      // shower / vitamin: a one-tap log with no side, timer, or follow-up.
+      // shower / vitamin / nailcut: a one-tap log with no side, timer, or follow-up.
       if (saving) return;
       setSaving(true);
       try {
@@ -629,7 +631,7 @@ export default function ActivityTimerCard({
         >
           <span className={restingIconClass}>{config.icon}</span>
           <span className="font-semibold text-baby-600">
-            {saving && (type === "shower" || type === "vitamin") ? "Saving..." : config.label}
+            {saving && (type === "shower" || type === "vitamin" || type === "nailcut") ? "Saving..." : config.label}
           </span>
         </button>
       </div>

@@ -93,6 +93,7 @@ interface DayStats {
   diaperCount: number;
   showerCount: number;
   vitaminCount: number;
+  nailcutCount: number;
   totalLogs: number;
   diaperLogs: LogEntry[];
   feedLogs: LogEntry[];
@@ -137,6 +138,7 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
       diaperCount: count("diaper"),
       showerCount: count("shower"),
       vitaminCount: count("vitamin"),
+      nailcutCount: count("nailcut"),
       totalLogs: dayLogs.length,
       diaperLogs: dayLogs.filter((l) => l.type === "diaper").sort(byTime),
       feedLogs: dayLogs.filter((l) => l.type === "feed").sort(byTime),
@@ -225,6 +227,7 @@ export default function AnalyticsPage() {
       diaperCount: 0,
       showerCount: 0,
       vitaminCount: 0,
+      nailcutCount: 0,
       totalLogs: 0,
     };
 
@@ -241,6 +244,7 @@ export default function AnalyticsPage() {
         diaperCount: sum((d) => d.diaperCount) / dayCount,
         showerCount: sum((d) => d.showerCount) / dayCount,
         vitaminCount: sum((d) => d.vitaminCount) / dayCount,
+        nailcutCount: sum((d) => d.nailcutCount) / dayCount,
       },
       totalStats: {
         feedTime: sum((d) => d.feedTime),
@@ -252,6 +256,7 @@ export default function AnalyticsPage() {
         diaperCount: sum((d) => d.diaperCount),
         showerCount: sum((d) => d.showerCount),
         vitaminCount: sum((d) => d.vitaminCount),
+        nailcutCount: sum((d) => d.nailcutCount),
         totalLogs: sum((d) => d.totalLogs),
       },
     };
@@ -322,6 +327,13 @@ export default function AnalyticsPage() {
           avg={avgStats.vitaminCount.toFixed(1)}
           total={String(totalStats.vitaminCount)}
         />
+        <StatCard
+          icon="💅"
+          label="Nail Cut"
+          today={String(todayStats.nailcutCount)}
+          avg={avgStats.nailcutCount.toFixed(1)}
+          total={String(totalStats.nailcutCount)}
+        />
       </div>
 
       {/* Daily breakdown table */}
@@ -377,6 +389,7 @@ export default function AnalyticsPage() {
                 { icon: "🩲", value: `${day.diaperCount}×`, show: day.diaperCount > 0 },
                 { icon: "🚿", value: `${day.showerCount}×`, show: day.showerCount > 0 },
                 { icon: "💊", value: `${day.vitaminCount}×`, show: day.vitaminCount > 0 },
+                { icon: "💅", value: `${day.nailcutCount}×`, show: day.nailcutCount > 0 },
               ].filter((c) => c.show);
 
               return (

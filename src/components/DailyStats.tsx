@@ -52,6 +52,7 @@ export default function DailyStats({ logs }: DailyStatsProps) {
       diaperCount: count("diaper"),
       showerCount: count("shower"),
       vitaminCount: count("vitamin"),
+      nailcutCount: count("nailcut"),
     };
   }, [logs]);
 
@@ -62,6 +63,7 @@ export default function DailyStats({ logs }: DailyStatsProps) {
     { icon: "🩲", label: "Diapers", value: String(stats.diaperCount), sub: "changed today" },
     { icon: "🚿", label: "Showers", value: String(stats.showerCount), sub: "taken today" },
     { icon: "💊", label: "Vitamins", value: String(stats.vitaminCount), sub: "given today" },
+    { icon: "💅", label: "Nail Cut", value: String(stats.nailcutCount), sub: "trimmed today" },
   ];
 
   return (
@@ -80,11 +82,11 @@ export default function DailyStats({ logs }: DailyStatsProps) {
           </div>
         ))}
       </div>
-      <div className="flex justify-center gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {cards.slice(3).map((c) => (
           <div
             key={c.label}
-            className="w-1/3 rounded-2xl bg-white p-3 shadow-sm text-center"
+            className="rounded-2xl bg-white p-3 shadow-sm text-center"
           >
             <div className="text-xl">{c.icon}</div>
             <div className="mt-1 text-lg font-bold text-gray-800">{c.value}</div>

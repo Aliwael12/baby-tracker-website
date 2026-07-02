@@ -43,6 +43,7 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   diaper: { icon: "🩲", label: "Diaper" },
   shower: { icon: "🚿", label: "Shower" },
   vitamin: { icon: "💊", label: "Vitamin" },
+  nailcut: { icon: "💅", label: "Nail Cut" },
   growth: { icon: "📏", label: "Growth" },
   health: { icon: "🩺", label: "Health" },
 };
@@ -62,6 +63,7 @@ const FILTER_OPTIONS = [
   { value: "diaper", icon: "🩲", label: "Diaper" },
   { value: "shower", icon: "🚿", label: "Shower" },
   { value: "vitamin", icon: "💊", label: "Vitamin" },
+  { value: "nailcut", icon: "💅", label: "Nail Cut" },
   { value: "health", icon: "🩺", label: "Health" },
 ] as const;
 

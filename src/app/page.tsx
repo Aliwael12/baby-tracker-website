@@ -8,6 +8,7 @@ import type { ActivityType } from "@/components/ActivityTimerCard";
 import ManualEntry from "@/components/ManualEntry";
 import PageHeader from "@/components/PageHeader";
 import LastFeedBanner from "@/components/LastFeedBanner";
+import NailCutBanner from "@/components/NailCutBanner";
 import DailyActionButtons from "@/components/DailyActionButtons";
 import { useUserName } from "@/lib/useUserName";
 
@@ -126,6 +127,11 @@ export default function Home() {
       />
 
       <section className="mb-4 space-y-3">
+        <NailCutBanner
+          userName={userName}
+          logs={logs}
+          onLogSaved={fetchLogs}
+        />
         <LastFeedBanner logs={logs} />
         <ActivityTimerCard
           type="feed"

@@ -25,6 +25,7 @@ const TYPE_META: Record<string, { icon: string; label: string }> = {
   diaper: { icon: "🩲", label: "Diaper" },
   shower: { icon: "🚿", label: "Shower" },
   vitamin: { icon: "💊", label: "Vitamin" },
+  nailcut: { icon: "💅", label: "Nail Cut" },
   growth: { icon: "📏", label: "Growth" },
   health: { icon: "🩺", label: "Health" },
 };
@@ -92,6 +93,7 @@ interface DayGroup {
     diaperCount: number;
     showerCount: number;
     vitaminCount: number;
+    nailcutCount: number;
   };
 }
 
@@ -131,6 +133,7 @@ function groupByDay(logs: LogEntry[]): DayGroup[] {
         diaperCount: count("diaper"),
         showerCount: count("shower"),
         vitaminCount: count("vitamin"),
+        nailcutCount: count("nailcut"),
       },
     });
   }
@@ -146,6 +149,7 @@ function DayStatsBar({ stats }: { stats: DayGroup["stats"] }) {
     { icon: "🩲", value: `${stats.diaperCount}×`, show: stats.diaperCount > 0 },
     { icon: "🚿", value: `${stats.showerCount}×`, show: stats.showerCount > 0 },
     { icon: "💊", value: `${stats.vitaminCount}×`, show: stats.vitaminCount > 0 },
+    { icon: "💅", value: `${stats.nailcutCount}×`, show: stats.nailcutCount > 0 },
   ].filter((i) => i.show);
 
   if (items.length === 0) return null;
