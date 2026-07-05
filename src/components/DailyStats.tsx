@@ -8,6 +8,7 @@ interface LogEntry {
   amountMl: number | null;
   durationMinutes: number | null;
   startTime: string;
+  endTime: string | null;
 }
 
 interface DailyStatsProps {
@@ -25,17 +26,29 @@ function formatMinutes(mins: number): string {
 
 export default function DailyStats({ logs }: DailyStatsProps) {
   const stats = useMemo(() => {
-    const todayStr = new Date().toDateString();
+    const now = new Date();
+    const todayStr = now.toDateString();
     const todayLogs = logs.filter(
       (l) => new Date(l.startTime).toDateString() === todayStr
     );
 
-    // Only sum positive durations so a corrupt log with end-before-start
-    // (negative durationMinutes) can't drag the day's total below zero.
+    // Local midnight for today; time totals count only the portion of each log
+    // that falls within today, so an overnight sleep spanning into today is
+    // credited correctly and no total exceeds 24h.
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const overlapMinutes = (l: { startTime: string; endTime: string | null }) => {
+      const s = new Date(l.startTime).getTime();
+      const e = l.endTime ? new Date(l.endTime).getTime() : s;
+      const lo = Math.max(s, dayStart.getTime());
+      const hi = Math.min(e, dayEnd.getTime());
+      return Math.max(0, (hi - lo) / 60000);
+    };
     const totalTime = (type: string) =>
-      todayLogs
-        .filter((l) => l.type === type && (l.durationMinutes ?? 0) > 0)
-        .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
+      logs
+        .filter((l) => l.type === type)
+        .reduce((sum, l) => sum + overlapMinutes(l), 0);
 
     const count = (type: string) =>
       todayLogs.filter((l) => l.type === type).length;

@@ -11,6 +11,7 @@ interface LogEntry {
   diaperStatus: string | null;
   durationMinutes: number | null;
   startTime: string;
+  endTime: string | null;
 }
 
 const DIAPER_STATUS_META: Record<string, { icon: string; label: string }> = {
@@ -58,6 +59,23 @@ function formatMl(ml: number): string {
 
 function getDayKey(iso: string): string {
   return new Date(iso).toDateString();
+}
+
+// Minutes of a log's [start, end] span that fall within the local calendar day
+// beginning at `dayStart` (local midnight). Splits an overnight log across the
+// days it spans, so no single day exceeds 24h of sleep/feed time.
+function overlapMinutes(
+  startIso: string,
+  endIso: string | null,
+  dayStart: Date
+): number {
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  const s = new Date(startIso).getTime();
+  const e = endIso ? new Date(endIso).getTime() : s;
+  const lo = Math.max(s, dayStart.getTime());
+  const hi = Math.min(e, dayEnd.getTime());
+  return Math.max(0, (hi - lo) / 60000);
 }
 
 function formatDateShort(dateStr: string): string {
@@ -111,13 +129,24 @@ function computeAllDayStats(logs: LogEntry[]): DayStats[] {
 
   const results: DayStats[] = [];
   for (const [dateKey, dayLogs] of groups) {
-    // Only sum positive durations: a corrupt log with end-before-start has a
-    // negative durationMinutes and must not drag the day's total below zero
-    // (which would hide the stat badge entirely).
+    // Local midnight for this day, derived from a log that belongs to it.
+    const anchor = new Date(dayLogs[0].startTime);
+    const dayStart = new Date(
+      anchor.getFullYear(),
+      anchor.getMonth(),
+      anchor.getDate()
+    );
+    // Time totals count only the portion of each log falling on THIS day, so an
+    // overnight sleep is split across the days it spans (no >24h totals) and its
+    // later-day portion is credited to the correct day. Scans all logs so a
+    // sleep that started the previous day still counts here.
     const totalTime = (type: string) =>
-      dayLogs
-        .filter((l) => l.type === type && (l.durationMinutes ?? 0) > 0)
-        .reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
+      logs
+        .filter((l) => l.type === type)
+        .reduce(
+          (sum, l) => sum + overlapMinutes(l.startTime, l.endTime, dayStart),
+          0
+        );
     const count = (type: string) => dayLogs.filter((l) => l.type === type).length;
     const totalMl = (type: string) =>
       dayLogs
