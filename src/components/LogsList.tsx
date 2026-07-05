@@ -81,6 +81,20 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
+// Whole days between two instants, by local calendar date (ignores time-of-day).
+// A sleep 11pm→7am the next morning is 1 day later; used to flag overnight logs.
+function dayOffset(startIso: string, endIso: string): number {
+  const s = new Date(startIso);
+  const e = new Date(endIso);
+  const sMidnight = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  const eMidnight = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+  return Math.round((eMidnight.getTime() - sMidnight.getTime()) / 86400000);
+}
+
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   const today = new Date();
@@ -617,6 +631,13 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                         <>
                           <span>→</span>
                           <span>{formatTime(log.endTime)}</span>
+                          {dayOffset(log.startTime, log.endTime) > 0 && (
+                            <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
+                              {dayOffset(log.startTime, log.endTime) === 1
+                                ? `next day · ${shortDate(log.endTime)}`
+                                : `+${dayOffset(log.startTime, log.endTime)}d · ${shortDate(log.endTime)}`}
+                            </span>
+                          )}
                         </>
                       )}
                     </div>
