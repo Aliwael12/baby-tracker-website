@@ -238,8 +238,13 @@ function EditLogModal({
       ? String(log.amountMl)
       : ""
   );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSaveEdit = async () => {
+    if (saving) return;
+    setError(null);
+    setSaving(true);
     const payload: Record<string, unknown> = {
       comments: editComments.trim() ? editComments.trim() : null,
     };
@@ -250,24 +255,38 @@ function EditLogModal({
 
     if (editsAmountMl) {
       const ml = editAmountMl.trim() ? parseFloat(editAmountMl) : NaN;
-      if (isNaN(ml) || ml <= 0) return;
+      if (isNaN(ml) || ml <= 0) {
+        setSaving(false);
+        setError("Enter a valid amount in ml.");
+        return;
+      }
       payload.amountMl = ml;
     }
 
     if (log.type === "growth") {
       const w = editWeightStr.trim() ? parseFloat(editWeightStr) : null;
       const h = editHeightStr.trim() ? parseFloat(editHeightStr) : null;
-      if (w == null && h == null) return;
+      if (w == null && h == null) {
+        setSaving(false);
+        setError("Enter a weight or height.");
+        return;
+      }
       payload.weightKg = w;
       payload.heightCm = h;
     }
 
     if (log.type === "health") {
-      if (!editHealthCondition) return;
+      if (!editHealthCondition) {
+        setSaving(false);
+        setError("Pick a condition.");
+        return;
+      }
       if (
         editHealthCondition === "fever" &&
         (!editFeverCelsius.trim() || parseFloat(editFeverCelsius) <= 0)
       ) {
+        setSaving(false);
+        setError("Enter a valid temperature for fever.");
         return;
       }
       payload.healthCondition = editHealthCondition;
@@ -285,6 +304,13 @@ function EditLogModal({
         payload.endTime = newStart.toISOString();
       } else if (editEndTimeStr) {
         const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
+        // The editor only captures a time-of-day for the end, on the start's
+        // date. If that lands at or before the start (e.g. an overnight sleep
+        // 10:13pm → 10:30am), the end really belongs to the next day — roll it
+        // forward so the range stays valid instead of going negative.
+        if (newEnd.getTime() <= newStart.getTime()) {
+          newEnd.setDate(newEnd.getDate() + 1);
+        }
         payload.endTime = newEnd.toISOString();
       } else {
         payload.endTime = null;
@@ -301,9 +327,14 @@ function EditLogModal({
       if (res.ok) {
         await onSaved?.();
         onClose();
+        return;
       }
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "Couldn't save changes. Please try again.");
     } catch {
-      // ignore
+      setError("Couldn't save changes. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -527,6 +558,12 @@ function EditLogModal({
           </>
         )}
 
+        {error && (
+          <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-center text-xs font-medium text-red-600">
+            {error}
+          </p>
+        )}
+
         <div className="flex gap-2">
           <button
             onClick={onClose}
@@ -536,9 +573,10 @@ function EditLogModal({
           </button>
           <button
             onClick={handleSaveEdit}
-            className="flex-1 rounded-xl bg-baby-400 py-2.5 text-sm font-semibold text-white shadow transition-all active:scale-[0.97]"
+            disabled={saving}
+            className="flex-1 rounded-xl bg-baby-400 py-2.5 text-sm font-semibold text-white shadow transition-all active:scale-[0.97] disabled:opacity-50"
           >
-            Save
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
