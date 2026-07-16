@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isInstantLog } from "@/lib/activities";
 
 type ActivityType = "pump" | "feed" | "sleep" | "diaper" | "shower" | "vitamin" | "nailcut";
 
@@ -54,10 +55,15 @@ export default function ManualEntry({ userName, onSaved, onClose }: ManualEntryP
   // (an amount in ml, logged instantly). The amount field is offered for feeds.
   const amountMlValue = isFeed ? parseFloat(amountMl) : NaN;
   const amountMlValid = !isNaN(amountMlValue) && amountMlValue > 0;
-  const isBottleFeed = isFeed && amountMlValid && !side;
 
-  // Diaper is always instant; a bottle feed (ml, no side) is instant too.
-  const isInstant = activityType === "diaper" || isBottleFeed;
+  // Shower, vitamin, nail cut and diaper are moments; so is a bottle feed. Only
+  // a sleep or a nursing feed is entered as a start/end range.
+  const isInstant =
+    !!activityType &&
+    isInstantLog(activityType, {
+      side,
+      amountMl: amountMlValid ? amountMlValue : null,
+    });
 
   // A feed needs either a side or a valid amount; one is enough.
   const feedValid = !isFeed || !!side || amountMlValid;

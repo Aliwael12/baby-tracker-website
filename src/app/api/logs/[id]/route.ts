@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isInstantLog } from "@/lib/activities";
 import { isHealthCondition } from "@/lib/health";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -215,16 +216,32 @@ export async function PATCH(
   if (data.startTime || data.endTime !== undefined) {
     const existing = existingForDuration;
     const finalStart = (data.startTime as Date) ?? existing.startTime;
-    const finalEnd = data.endTime === null ? null : (data.endTime as Date | undefined) ?? existing.endTime;
-    if (finalStart && finalEnd) {
-      // A backwards range yields a negative duration, which corrupts day totals.
-      if (finalEnd.getTime() < finalStart.getTime()) {
-        return NextResponse.json(
-          { error: "endTime cannot be before startTime" },
-          { status: 400 }
-        );
+    const instant = isInstantLog(existing.type, {
+      side: existing.side,
+      amountMl: (data.amountMl as number | undefined) ?? existing.amountMl,
+    });
+
+    if (instant) {
+      // An instant activity is a moment, not a span: pin the end to the start
+      // instead of trusting the client's. Editing one can no longer invent a
+      // duration, and a row that already carries one is healed on save.
+      data.endTime = finalStart;
+      data.durationMinutes = 0;
+    } else {
+      const finalEnd =
+        data.endTime === null
+          ? null
+          : (data.endTime as Date | undefined) ?? existing.endTime;
+      if (finalStart && finalEnd) {
+        // A backwards range yields a negative duration, which corrupts day totals.
+        if (finalEnd.getTime() < finalStart.getTime()) {
+          return NextResponse.json(
+            { error: "endTime cannot be before startTime" },
+            { status: 400 }
+          );
+        }
+        data.durationMinutes = (finalEnd.getTime() - finalStart.getTime()) / 60000;
       }
-      data.durationMinutes = (finalEnd.getTime() - finalStart.getTime()) / 60000;
     }
   }
 

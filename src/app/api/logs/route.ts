@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isInstantLog } from "@/lib/activities";
 import { isHealthCondition } from "@/lib/health";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -109,13 +110,18 @@ export async function POST(req: NextRequest) {
   }
 
   const start = new Date(startTime);
-  const end = endTime ? new Date(endTime) : null;
+  let end = endTime ? new Date(endTime) : null;
 
   if (isNaN(start.getTime())) {
     return NextResponse.json({ error: "Invalid startTime" }, { status: 400 });
   }
   if (end && isNaN(end.getTime())) {
     return NextResponse.json({ error: "Invalid endTime" }, { status: 400 });
+  }
+  // An instant activity is a moment, not a span. Pin its end to its start so no
+  // client can record a shower as something that took time.
+  if (isInstantLog(type, { side, amountMl })) {
+    end = start;
   }
   // A backwards range yields a negative duration, which corrupts day totals.
   if (end && end.getTime() < start.getTime()) {

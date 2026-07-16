@@ -3,6 +3,7 @@
 import { useState } from "react";
 import PauseTimelineIndicator from "@/components/PauseTimelineIndicator";
 import { SwipeableRow, DeleteConfirm } from "@/components/SwipeableLogRow";
+import { isInstantLog } from "@/lib/activities";
 import {
   HEALTH_CONDITIONS,
   HEALTH_CONDITION_META,
@@ -174,16 +175,14 @@ function EditLogModal({
   onClose: () => void;
   onSaved?: () => void | Promise<void>;
 }) {
-  // A bottle feed is a feed measured in ml (no side, no nursing duration). It
-  // edits like a pump log: a single time + an amount, not a start/end range.
-  const isBottleFeed = log.type === "feed" && log.amountMl !== null;
-  const usesSingleTime =
-    log.type === "diaper" ||
-    log.type === "growth" ||
-    log.type === "health" ||
-    log.type === "pump" ||
-    isBottleFeed;
-  const editsAmountMl = log.type === "pump" || isBottleFeed;
+  // An instant log is a moment, not a range: it edits as a single time field.
+  const usesSingleTime = isInstantLog(log.type, {
+    side: log.side,
+    amountMl: log.amountMl,
+  });
+  // A pump or bottle feed records how much, not how long.
+  const editsAmountMl =
+    log.type === "pump" || (log.type === "feed" && log.amountMl !== null);
 
   // Initialized from the log prop (component is keyed by log.id, so it
   // remounts per log) — no effect needed to sync derived state.
@@ -305,10 +304,11 @@ function EditLogModal({
       } else if (editEndTimeStr) {
         const newEnd = new Date(`${editDateStr}T${editEndTimeStr}`);
         // The editor only captures a time-of-day for the end, on the start's
-        // date. If that lands at or before the start (e.g. an overnight sleep
+        // date. If that lands before the start (e.g. an overnight sleep
         // 10:13pm → 10:30am), the end really belongs to the next day — roll it
-        // forward so the range stays valid instead of going negative.
-        if (newEnd.getTime() <= newStart.getTime()) {
+        // forward so the range stays valid instead of going negative. An end
+        // equal to the start is a zero-length log, not an overnight one.
+        if (newEnd.getTime() < newStart.getTime()) {
           newEnd.setDate(newEnd.getDate() + 1);
         }
         payload.endTime = newEnd.toISOString();
@@ -626,6 +626,14 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
       <div className="space-y-2">
       {filteredLogs.map((log) => {
         const meta = TYPE_META[log.type] || { icon: "❓", label: log.type };
+        // An instant log is an activity, not a measurement: show when it
+        // happened and nothing else. Its stored end mirrors its start, so a
+        // range and a duration would be noise at best — and on rows written
+        // before instant types were pinned, wrong.
+        const instant = isInstantLog(log.type, {
+          side: log.side,
+          amountMl: log.amountMl,
+        });
         const dateLabel = formatDate(log.startTime);
         const showDateHeader = dateHeaderIds.has(log.id);
         const gap = gaps.get(log.id);
@@ -657,15 +665,17 @@ export default function LogsList({ logs, onDelete, onEdit }: LogsListProps) {
                           </span>
                         )}
                       </span>
-                      {log.durationMinutes !== null && log.durationMinutes > 0 && (
-                        <span className="rounded-full bg-baby-100 px-2 py-0.5 text-xs font-semibold text-baby-600">
-                          {formatDuration(log.durationMinutes)}
-                        </span>
-                      )}
+                      {!instant &&
+                        log.durationMinutes !== null &&
+                        log.durationMinutes > 0 && (
+                          <span className="rounded-full bg-baby-100 px-2 py-0.5 text-xs font-semibold text-baby-600">
+                            {formatDuration(log.durationMinutes)}
+                          </span>
+                        )}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-400">
                       <span>{formatTime(log.startTime)}</span>
-                      {log.endTime && (
+                      {!instant && log.endTime && (
                         <>
                           <span>→</span>
                           <span>{formatTime(log.endTime)}</span>
