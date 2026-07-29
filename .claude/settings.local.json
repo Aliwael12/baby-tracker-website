@@ -4,7 +4,10 @@
       "Bash(npx --no-install next lint --dir src)",
       "Bash(git push *)",
       "Bash(git stash *)",
-      "Bash(git rebase *)"
+      "Bash(git rebase *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"=== TSC EXIT: $? ===\")",
+      "Bash(npx eslint *)"
     ]
   }
 }
